@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "yourway",
+    "slug": "yourway",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow YourWay to access your location to show your position on the map."
+        }
+      ]
+    ],
+
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.yourway",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "YourWay uses your location to show your current position on the map.",
+        "NSLocationAlwaysUsageDescription": "YourWay uses your location to provide navigation and nearby services.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "YourWay needs access to your location to show your position accurately."
+      }
+    },
+
+    "android": {
+      "package": "com.anonymous.yourway",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
+
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

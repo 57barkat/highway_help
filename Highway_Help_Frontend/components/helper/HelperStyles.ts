@@ -1,0 +1,296 @@
+import { StyleSheet, Dimensions, Platform } from "react-native";
+const { width } = Dimensions.get("window");
+
+export const styles = StyleSheet.create({
+  // Floating Header & Status
+  headerFloating: {
+    position: "absolute",
+    top: 60,
+    left: 20,
+    right: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  onlineStatusCard: {
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  statusDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
+  statusLabel: {
+    fontWeight: "900",
+    fontSize: 13,
+    color: "#1A1A1A",
+    letterSpacing: 0.5,
+  },
+  powerCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+
+  // Stats Dashboard
+  statsContainer: {
+    position: "absolute",
+    top: 130,
+    left: 20,
+    right: 20,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    borderRadius: 28,
+    paddingVertical: 20,
+    elevation: 4,
+    zIndex: 9,
+    borderWidth: 1,
+    borderColor: "#F1F3F5",
+  },
+  statBox: { flex: 1, alignItems: "center" },
+  statDivider: {
+    width: 1,
+    height: "50%",
+    backgroundColor: "#EEE",
+    alignSelf: "center",
+  },
+  statValue: {
+    fontSize: 12,
+    fontWeight: "900",
+    marginTop: 4,
+    color: "#1A1A1A",
+  },
+  statLabel: {
+    fontSize: 11,
+    color: "#ADB5BD",
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+
+  // Incoming Request Card
+  requestCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginVertical: 10,
+    padding: 24,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: "#F1F3F5",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+  },
+  cardTop: { flexDirection: "row", alignItems: "center" },
+  problemIconContainer: {
+    backgroundColor: "#F0F3FF",
+    padding: 14,
+    borderRadius: 20,
+  },
+  problemTitle: { fontSize: 18, fontWeight: "900", color: "#1A1C1E" },
+  badgeRow: { flexDirection: "row", marginTop: 10 },
+  distanceBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  badgeText: {
+    fontSize: 12,
+    marginLeft: 5,
+    color: "#495057",
+    fontWeight: "700",
+  },
+  priceBadge: {
+    backgroundColor: "#E7FAF3",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  priceBadgeText: { fontSize: 12, color: "#00C853", fontWeight: "800" },
+  descriptionText: {
+    marginTop: 16,
+    color: "#6C757D",
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+
+  // Bid Input Area
+  inputContainer: { marginTop: 24 },
+  inputLabel: {
+    fontSize: 12,
+    color: "#ADB5BD",
+    fontWeight: "900",
+    marginBottom: 10,
+    textTransform: "uppercase",
+  },
+  priceInput: {
+    backgroundColor: "#F8F9FA",
+    borderWidth: 2,
+    borderColor: "#E9ECEF",
+    borderRadius: 20,
+    padding: 18,
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#2D5AF0",
+  },
+  mainOfferBtn: {
+    backgroundColor: "#2D5AF0",
+    flexDirection: "row",
+    marginTop: 20,
+    paddingVertical: 20,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mainOfferBtnText: {
+    color: "#FFF",
+    fontWeight: "900",
+    fontSize: 17,
+    marginRight: 8,
+  },
+
+  // Active Job Workflow
+  workflowContainer: {
+    position: "absolute",
+    bottom: 50,
+    width: "100%",
+    paddingHorizontal: 20,
+    zIndex: 100,
+  },
+  workflowBtn: {
+    flexDirection: "row",
+    width: "100%",
+    padding: 24,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 12,
+  },
+  workflowBtnText: {
+    color: "#FFF",
+    fontWeight: "900",
+    fontSize: 20,
+    letterSpacing: 0.5,
+  },
+
+  // Map Elements
+  helperMarker: {
+    backgroundColor: "#FFF",
+    padding: 10,
+    borderRadius: 30,
+    borderWidth: 3,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
+  userMarkerContainer: {
+    width: 36,
+    height: 36,
+    backgroundColor: "rgba(0, 200, 83, 0.15)",
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  userMarkerCore: {
+    width: 16,
+    height: 16,
+    backgroundColor: "#00C853",
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: "#FFF",
+  },
+
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 20,
+    paddingTop: 10,
+  },
+  sheetTitle: { fontSize: 22, fontWeight: "900", color: "#1A1A1A" },
+  emptyContainer: {
+    alignItems: "center",
+    marginTop: 60,
+    paddingHorizontal: 40,
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#ADB5BD",
+    marginTop: 20,
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 22,
+  },
+  pulseContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  pulseInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#2D5AF0",
+  },
+  pulseOuter: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#2D5AF0",
+    position: "absolute",
+  },
+});
+
+export const mapStyle = [
+  {
+    featureType: "all",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#746855" }],
+  },
+  {
+    featureType: "administrative.locality",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#d59563" }],
+  },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#c9d2d4" }],
+  },
+];

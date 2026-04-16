@@ -1,0 +1,112 @@
+.helpers-page {
+  padding: 10px;
+}
+
+.page-header p {
+  color: #6b7280;
+  margin-top: -15px;
+  margin-bottom: 30px;
+}
+
+/* Grid Layout */
+.helpers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Card Styling */
+.helper-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  position: relative;
+}
+
+.helper-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Profile Avatar Circle */
+.helper-avatar {
+  width: 60px;
+  height: 60px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 auto 15px;
+}
+
+.helper-details h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #111827;
+}
+
+.helper-details p {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 5px 0 20px;
+}
+
+/* Status Tags */
+.status-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.tag-verified {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.tag-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Action Buttons */
+.action-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-verify {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-verify:hover {
+  background: #1d4ed8;
+}
+
+.btn-unverify {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.btn-unverify:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}

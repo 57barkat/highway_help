@@ -1,0 +1,80 @@
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  background-color: #111827; /* Deep charcoal/navy */
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  position: fixed;
+  left: 0;
+  top: 0;
+  box-shadow: 4px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 2.5rem;
+  color: #3b82f6; /* Modern Blue Accent */
+  border-bottom: 1px solid #1f2937;
+  padding-bottom: 1rem;
+}
+
+.sidebar nav {
+  flex-grow: 1; /* Pushes the logout button to the bottom */
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar a {
+  text-decoration: none;
+  color: #9ca3af; /* Muted gray */
+  font-size: 1rem;
+  font-weight: 500;
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+/* Hover state */
+.sidebar a:hover {
+  background-color: #1f2937;
+  color: #ffffff;
+  transform: translateX(5px);
+}
+
+/* Active state (if you use NavLink from react-router-dom later) */
+.sidebar a.active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Logout Button Styling */
+.sidebar button {
+  background-color: rgba(239, 68, 68, 0.1); /* Subtle red tint */
+  color: #ef4444; /* Soft red */
+  border: 1px solid #ef4444;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: auto; /* Stick to bottom */
+}
+
+.sidebar button:hover {
+  background-color: #ef4444;
+  color: #ffffff;
+}

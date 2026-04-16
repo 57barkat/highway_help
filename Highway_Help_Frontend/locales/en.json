@@ -1,0 +1,51 @@
+{
+  "tabs": {
+    "home": "Home",
+    "settings": "Settings",
+    "users": "Users"
+  },
+  "home": {
+    "title": "HomePage",
+    "goToUser": "Go to user 1"
+  },
+  "users": {
+    "title": "UserId"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "logout": "Logout",
+    "logoutConfirmTitle": "Logout",
+    "logoutConfirmMessage": "Are you sure you want to logout?",
+    "themeOptions": {
+      "auto": "Auto (System)",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "languageOptions": {
+      "english": "English",
+      "urdu": "Urdu",
+      "pashto": "Pashto"
+    }
+  },
+  "login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "loginButton": "Login",
+    "loggingIn": "Logging in...",
+    "error": "Error",
+    "fillFields": "Please fill in all fields",
+    "invalidCredentials": "Invalid credentials",
+    "loginFailed": "Login failed. Please try again.",
+    "demoCredentials": "Use demo credentials"
+  },
+  "common": {
+    "appName": "My App",
+    "loading": "Loading...",
+    "cancel": "Cancel"
+  }
+}

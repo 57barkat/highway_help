@@ -1,0 +1,51 @@
+{
+  "tabs": {
+    "home": "کور",
+    "settings": "امستنې",
+    "users": "کارونکي"
+  },
+  "home": {
+    "title": "کور پاڼه",
+    "goToUser": "کارونکي 1 ته لاړ شه"
+  },
+  "users": {
+    "title": "کارونکی ID"
+  },
+  "settings": {
+    "title": "امستنې",
+    "theme": "بڼه",
+    "language": "ژبه",
+    "logout": "وتل",
+    "logoutConfirmTitle": "وتل",
+    "logoutConfirmMessage": "ایا تاسو واقعاً وتل غواړئ؟",
+    "themeOptions": {
+      "auto": "خپلسر (سیستم)",
+      "light": "روښانه",
+      "dark": "تیاره"
+    },
+    "languageOptions": {
+      "english": "انګلیسي",
+      "urdu": "اردو",
+      "pashto": "پښتو"
+    }
+  },
+  "login": {
+    "title": "ننوتل",
+    "email": "بریښنالیک",
+    "password": "پټنوم",
+    "emailPlaceholder": "خپل بریښنالیک دننه کړئ",
+    "passwordPlaceholder": "خپل پټنوم دننه کړئ",
+    "loginButton": "ننوتل",
+    "loggingIn": "ننوتل کیږي...",
+    "error": "خطا",
+    "fillFields": "مهرباني وکړئ ټول ډګرونه ډک کړئ",
+    "invalidCredentials": "نادرست credentials",
+    "loginFailed": "ننوتل ناکام شو. مهرباني وکړئ بیا هڅه وکړئ.",
+    "demoCredentials": "ډیمو credentials وکاروئ"
+  },
+  "common": {
+    "appName": "زما اپلیکیشن",
+    "loading": "لوډیږي...",
+    "cancel": "لغوه کول"
+  }
+}

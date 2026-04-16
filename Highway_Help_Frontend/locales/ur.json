@@ -1,0 +1,51 @@
+{
+  "tabs": {
+    "home": "ہوم",
+    "settings": "ترتیبات",
+    "users": "صارفین"
+  },
+  "home": {
+    "title": "ہوم پیج",
+    "goToUser": "صارف 1 پر جائیں"
+  },
+  "users": {
+    "title": "صارف ID"
+  },
+  "settings": {
+    "title": "ترتیبات",
+    "theme": "تھیم",
+    "language": "زبان",
+    "logout": "لاگ آؤٹ",
+    "logoutConfirmTitle": "لاگ آؤٹ",
+    "logoutConfirmMessage": "کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟",
+    "themeOptions": {
+      "auto": "خودکار (سسٹم)",
+      "light": "ہلکی",
+      "dark": "گہری"
+    },
+    "languageOptions": {
+      "english": "انگریزی",
+      "urdu": "اردو",
+      "pashto": "پشتو"
+    }
+  },
+  "login": {
+    "title": "لاگ ان",
+    "email": "ای میل",
+    "password": "پاس ورڈ",
+    "emailPlaceholder": "اپنا ای میل درج کریں",
+    "passwordPlaceholder": "اپنا پاس ورڈ درج کریں",
+    "loginButton": "لاگ ان",
+    "loggingIn": "لاگ ان ہو رہا ہے...",
+    "error": "خرابی",
+    "fillFields": "براہ کرم تمام فیلڈز بھریں",
+    "invalidCredentials": "غلط credentials",
+    "loginFailed": "لاگ ان ناکام ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
+    "demoCredentials": "ڈیمو credentials استعمال کریں"
+  },
+  "common": {
+    "appName": "میری ایپ",
+    "loading": "لوڈ ہو رہا ہے...",
+    "cancel": "منسوخ کریں"
+  }
+}
