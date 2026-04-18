@@ -7,3 +7,30 @@ export const formatPhoneNumber = (phone: string | string[]) => {
   }
   return phoneStr; // Return original if not 10 digits
 };
+
+export const normalizePkPhoneNumber = (value: string) => {
+  const digitsOnly = value.replace(/\D/g, "");
+  if (!digitsOnly) {
+    return null;
+  }
+
+  let normalized = digitsOnly;
+  if (normalized.startsWith("00")) {
+    normalized = normalized.slice(2);
+  }
+  if (normalized.startsWith("92")) {
+    normalized = normalized.slice(2);
+  }
+  if (normalized.startsWith("0")) {
+    normalized = normalized.slice(1);
+  }
+
+  if (!/^3\d{9}$/.test(normalized)) {
+    return null;
+  }
+
+  return `+92${normalized}`;
+};
+
+export const buildWhatsAppUrl = (phoneNumber: string) =>
+  `https://wa.me/${phoneNumber.replace(/\D/g, "")}`;

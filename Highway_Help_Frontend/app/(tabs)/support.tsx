@@ -7,7 +7,7 @@ import {
   FlatList,
   Linking,
   Dimensions,
-  ScrollView,
+  Platform,
 } from "react-native";
 import {
   ShieldAlert,
@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   HeartPulse,
 } from "lucide-react-native";
+import { useTheme } from "@/context/theme";
+import { uiRadii, uiShadows, uiSpacing } from "@/lib/ui/system";
 
 const EMERGENCY_DATA = [
   {
@@ -71,18 +73,38 @@ const EMERGENCY_DATA = [
 ];
 
 const SupportScreen = () => {
+  const { theme } = useTheme();
   const screenWidth = Dimensions.get("window").width;
   const numColumns = 2;
 
-  const handleCall = (number: any) => {
+  const handleCall = (number: string) => {
     Linking.openURL(`tel:${number}`);
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Emergency Helplines</Text>
-        <Text style={styles.headerSubtitle}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: theme.colors.card,
+            borderBottomColor: theme.colors.border,
+          },
+        ]}
+      >
+        <Text
+          style={[styles.headerTitle, { color: theme.colors.text.primary }]}
+        >
+          Emergency Helplines
+        </Text>
+        <Text
+          style={[
+            styles.headerSubtitle,
+            { color: theme.colors.text.secondary },
+          ]}
+        >
           Tap any card to call immediately
         </Text>
       </View>
@@ -92,10 +114,19 @@ const SupportScreen = () => {
         numColumns={numColumns}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.gridPadding}
+        columnWrapperStyle={styles.rowSpacing}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[styles.card, { width: (screenWidth - 50) / 2 }]}
+            style={[
+              styles.card,
+              {
+                width: (screenWidth - uiSpacing.xl * 2 - 15) / 2,
+                backgroundColor: theme.colors.card,
+                borderColor: theme.colors.border,
+              },
+            ]}
             onPress={() => handleCall(item.num)}
+            activeOpacity={0.7}
           >
             <View
               style={[
@@ -105,8 +136,18 @@ const SupportScreen = () => {
             >
               <item.icon size={28} color={item.color} />
             </View>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardSub}>{item.sub}</Text>
+            <Text
+              style={[styles.cardTitle, { color: theme.colors.text.primary }]}
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            <Text
+              style={[styles.cardSub, { color: theme.colors.text.secondary }]}
+              numberOfLines={1}
+            >
+              {item.sub}
+            </Text>
             <View style={[styles.badge, { backgroundColor: item.color }]}>
               <PhoneCall size={12} color="#FFF" />
               <Text style={styles.badgeText}>{item.num}</Text>
@@ -119,47 +160,53 @@ const SupportScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC", marginTop: 20 },
+  container: { flex: 1 },
   header: {
-    padding: 25,
-    backgroundColor: "#FFF",
+    paddingHorizontal: uiSpacing.lg,
+    paddingTop: Platform.OS === "ios" ? 60 : uiSpacing.xl,
+    paddingBottom: uiSpacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
   },
-  headerTitle: { fontSize: 22, fontWeight: "800", color: "#0F172A" },
-  headerSubtitle: { fontSize: 14, color: "#64748B", marginTop: 4 },
-  gridPadding: { padding: 15 },
+  headerTitle: { fontSize: 24, fontWeight: "900" },
+  headerSubtitle: { fontSize: 14, marginTop: 4, fontWeight: "500" },
+  gridPadding: {
+    padding: uiSpacing.lg,
+    paddingBottom: 40,
+  },
+  rowSpacing: {
+    justifyContent: "space-between",
+  },
   card: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    padding: 20,
-    margin: 10,
+    borderRadius: uiRadii.xl,
+    padding: 18,
+    marginBottom: 15,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#F1F5F9",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    ...uiShadows.soft,
   },
   iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#1E293B" },
-  cardSub: { fontSize: 12, color: "#94A3B8", marginBottom: 10 },
+  cardTitle: { fontSize: 15, fontWeight: "800", textAlign: "center" },
+  cardSub: {
+    fontSize: 11,
+    marginBottom: 12,
+    fontWeight: "600",
+    textAlign: "center",
+  },
   badge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: 20,
   },
-  badgeText: { color: "#FFF", fontWeight: "800", fontSize: 14, marginLeft: 5 },
+  badgeText: { color: "#FFF", fontWeight: "900", fontSize: 13, marginLeft: 6 },
 });
 
 export default SupportScreen;

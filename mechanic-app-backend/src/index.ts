@@ -3,7 +3,6 @@ import http from "http";
 import { Server, Socket } from "socket.io";
 import cors from "cors";
 import dotenv from "dotenv";
-import jwt from "jsonwebtoken";
 import { In, IsNull } from "typeorm";
 import authRoutes from "./routes/auth.routes";
 import requestRoutes from "./routes/request.routes";
@@ -11,6 +10,7 @@ import { User, UserRole } from "./entities/User";
 import { Request as JobRequest } from "./entities/Request";
 import paymentRoutes from "./routes/payment.routes";
 import { AppDataSource } from "./config/db";
+import { verifyToken } from "./utils/auth.util";
 
 dotenv.config();
 
@@ -19,6 +19,8 @@ const server = http.createServer(app);
 export const io = new Server(server, {
   path: "/socket.io",
   cors: { origin: "*", methods: ["GET", "POST"] },
+  pingInterval: 25000,
+  pingTimeout: 20000,
 });
 
 const ACTIVE_STATUSES = ["pending", "accepted", "arrived", "working"];
@@ -105,10 +107,10 @@ const startServer = async () => {
       try {
         const token = socket.handshake.auth?.token;
         if (!token) return next(new Error("No token"));
-        const payload: any = jwt.verify(
-          token,
-          process.env.JWT_SECRET || "fallback_secret",
-        );
+        const payload = verifyToken(token);
+        if (payload.type !== "access") {
+          return next(new Error("Invalid access token"));
+        }
         (socket as any).userId = payload.id;
         next();
       } catch (err) {
@@ -157,7 +159,15 @@ const startServer = async () => {
       }
 
       socket.on("ride:location_update", ({ requestId, lat, lng }) => {
-        if (!requestId || !lat || !lng) return;
+        if (
+          !requestId ||
+          typeof lat !== "number" ||
+          typeof lng !== "number" ||
+          Number.isNaN(lat) ||
+          Number.isNaN(lng)
+        ) {
+          return;
+        }
         socket.to(`request_${requestId}`).emit("ride:peer_location", {
           senderId: userId,
           lat,
@@ -274,6 +284,15 @@ const startServer = async () => {
       });
 
       socket.on("mechanic:location", async ({ lat, lng }) => {
+        if (
+          typeof lat !== "number" ||
+          typeof lng !== "number" ||
+          Number.isNaN(lat) ||
+          Number.isNaN(lng)
+        ) {
+          return;
+        }
+
         let mech = onlineMechanics.get(userId);
         if (!mech) {
           const dbUser = await userRepo.findOneBy({ id: userId });

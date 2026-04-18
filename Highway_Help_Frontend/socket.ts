@@ -1,17 +1,20 @@
 import io from "socket.io-client";
-import * as SecureStore from "expo-secure-store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BASE_URL, SOCKET_OPTIONS } from "./lib/runtime";
+import { getStoredToken, getStoredUser } from "./lib/auth-storage";
 
 let socket: any;
 
 export const getSocket = async () => {
   if (socket) return socket;
 
-  socket = io("http://192.168.100.173:3000", {
-    transports: ["websocket"],
+  const token = await getStoredToken();
+
+  socket = io(BASE_URL, {
+    ...SOCKET_OPTIONS,
+    auth: { token },
   });
 
-  const userStr = await AsyncStorage.getItem("app_token");
+  const userStr = await getStoredUser();
   if (userStr) {
     const user = JSON.parse(userStr);
     socket.emit("authenticate", user.id, user.role);

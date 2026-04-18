@@ -1,5 +1,16 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, Modal } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useTheme } from "@/context/theme";
+import { uiRadii, uiSpacing } from "@/lib/ui/system";
 
 interface Props {
   visible: boolean;
@@ -16,94 +27,166 @@ export default function FinalPriceModal({
   onConfirm,
   onClose,
 }: Props) {
+  const { theme } = useTheme();
+
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.7)",
-          justifyContent: "flex-end",
-        }}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.overlay}
       >
+        <TouchableOpacity
+          style={styles.dismissArea}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+
         <View
-          style={{
-            backgroundColor: "#FFF",
-            borderTopLeftRadius: 32,
-            borderTopRightRadius: 32,
-            padding: 30,
-            alignItems: "center",
-          }}
+          style={[
+            styles.modalContainer,
+            { backgroundColor: theme.colors.card },
+          ]}
         >
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: "900",
-              color: "#111827",
-              marginBottom: 5,
-            }}
-          >
+          <View
+            style={[styles.handle, { backgroundColor: theme.colors.border }]}
+          />
+
+          <Text style={[styles.title, { color: theme.colors.text.primary }]}>
             Final Charges
           </Text>
-          <Text style={{ color: "#6B7280", marginBottom: 30 }}>
+          <Text
+            style={[styles.subtitle, { color: theme.colors.text.secondary }]}
+          >
             Confirm the total amount with the user
           </Text>
 
           <View
-            style={{
-              width: "100%",
-              backgroundColor: "#F9FAFB",
-              borderRadius: 20,
-              padding: 20,
-              marginBottom: 30,
-            }}
+            style={[
+              styles.inputWrapper,
+              { backgroundColor: theme.colors.background },
+            ]}
           >
-            <Text
-              style={{
-                textAlign: "center",
-                color: "#9CA3AF",
-                fontSize: 12,
-                fontWeight: "700",
-              }}
-            >
-              TOTAL AMOUNT (RS)
-            </Text>
+            <Text style={styles.inputLabel}>TOTAL AMOUNT (RS)</Text>
             <TextInput
-              style={{
-                fontSize: 42,
-                fontWeight: "900",
-                textAlign: "center",
-                color: "#111827",
-                marginTop: 10,
-              }}
+              style={[styles.textInput, { color: theme.colors.text.primary }]}
               placeholder="0000"
+              placeholderTextColor={theme.isDark ? "#475569" : "#9CA3AF"}
               keyboardType="numeric"
               value={finalAmount}
               onChangeText={setFinalAmount}
               autoFocus
+              selectionColor={theme.colors.primary}
             />
           </View>
 
           <TouchableOpacity
-            style={{
-              backgroundColor: "#10B981",
-              width: "100%",
-              height: 60,
-              borderRadius: 20,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
+            style={[
+              styles.confirmBtn,
+              { backgroundColor: theme.colors.success || "#10B981" },
+            ]}
             onPress={onConfirm}
+            activeOpacity={0.8}
           >
-            <Text style={{ color: "#FFF", fontWeight: "900", fontSize: 18 }}>
-              COLLECT & FINISH
-            </Text>
+            <Text style={styles.confirmBtnText}>COLLECT & FINISH</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={{ marginTop: 20 }} onPress={onClose}>
-            <Text style={{ color: "#9CA3AF", fontWeight: "600" }}>Dismiss</Text>
+          <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+            <Text
+              style={[
+                styles.cancelText,
+                { color: theme.colors.text.secondary },
+              ]}
+            >
+              Dismiss
+            </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "flex-end",
+  },
+  dismissArea: {
+    flex: 1,
+  },
+  modalContainer: {
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
+    padding: uiSpacing.xl,
+    paddingBottom: Platform.OS === "ios" ? 40 : 30,
+    alignItems: "center",
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "900",
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    marginBottom: 25,
+    textAlign: "center",
+  },
+  inputWrapper: {
+    width: "100%",
+    borderRadius: uiRadii.xl,
+    padding: 20,
+    marginBottom: 25,
+    alignItems: "center",
+  },
+  inputLabel: {
+    color: "#94A3B8",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  textInput: {
+    fontSize: 48,
+    fontWeight: "900",
+    textAlign: "center",
+    width: "100%",
+    marginTop: 5,
+  },
+  confirmBtn: {
+    width: "100%",
+    height: 65,
+    borderRadius: uiRadii.lg,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  confirmBtnText: {
+    color: "#FFF",
+    fontWeight: "900",
+    fontSize: 18,
+    letterSpacing: 0.5,
+  },
+  cancelBtn: {
+    marginTop: 20,
+    padding: 10,
+  },
+  cancelText: {
+    fontWeight: "700",
+    fontSize: 14,
+  },
+});

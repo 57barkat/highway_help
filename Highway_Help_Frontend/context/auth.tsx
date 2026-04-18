@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import * as SecureStore from "expo-secure-store";
-import axios from "axios";
 import api from "@/api/api";
+import { clearSession, getStoredToken, getStoredUser, persistSession } from "@/lib/auth-storage";
+import { getValidAccessToken } from "@/lib/auth-client";
 
-export type Role = "user" | "mechanic";
+export type Role = "user" | "helper";
 
 export interface User {
   id: number;
   name: string;
   email: string;
+  phoneNumber: string | null;
   role: Role;
 }
 
@@ -20,6 +21,7 @@ interface AuthContextType {
   signup: (
     name: string,
     email: string,
+    phoneNumber: string,
     password: string,
     role: Role,
   ) => Promise<boolean>;
@@ -51,13 +53,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const loadAuthState = async () => {
       try {
-        const token = await SecureStore.getItemAsync("app_token");
-        const userStr = await SecureStore.getItemAsync("app_user");
+        const token = await getStoredToken();
+        const userStr = await getStoredUser();
 
-        if (token && userStr) {
+        const validToken = token ? await getValidAccessToken() : null;
+
+        if (validToken && userStr) {
           setUser(JSON.parse(userStr));
           setIsAuthenticated(true);
         } else {
+          await clearSession();
           setUser(null);
           setIsAuthenticated(false);
         }
@@ -75,15 +80,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await axios.post(`${api}/login`, {
+      const response = await api.post("/auth/login", {
         email,
         password,
       });
 
-      const { token, user } = response.data;
+      const { accessToken, refreshToken, user } = response.data;
 
-      await SecureStore.setItemAsync("app_token", token);
-      await SecureStore.setItemAsync("app_user", JSON.stringify(user));
+      await persistSession(accessToken, user, refreshToken);
 
       setUser(user);
       setIsAuthenticated(true);
@@ -98,19 +102,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signup = async (
     name: string,
     email: string,
+    phoneNumber: string,
     password: string,
     role: Role,
   ): Promise<boolean> => {
     try {
-      const response = await axios.post(`${api}/register`, {
+      const response = await api.post("/auth/register", {
         name,
         email,
+        phoneNumber,
         password,
         role,
       });
 
-      if (response.data?.message === "User registered successfully") {
-        return await login(email, password);
+      if (response.data?.accessToken && response.data?.user) {
+        await persistSession(
+          response.data.accessToken,
+          response.data.user,
+          response.data.refreshToken,
+        );
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        return true;
       }
 
       return false;
@@ -122,8 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async (): Promise<void> => {
     try {
-      await SecureStore.deleteItemAsync("app_token");
-      await SecureStore.deleteItemAsync("app_user");
+      await clearSession();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {

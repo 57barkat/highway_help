@@ -24,11 +24,11 @@ const PROBLEM_RATES: Record<string, { base: number; perKm: number }> = {
 };
 export const createRequest = async (req: AuthRequest, res: Response) => {
   try {
-    // Radius ko body se pakrein, agar nahi hai to default 5km rakhein
     const { problemType, lat, lng, description, areaName, radius } = req.body;
-    const searchRadius = radius || 5;
 
+    const searchRadius = radius || 5;
     const user = req.user as User;
+
     if (!lat || !lng || !problemType || !description) {
       return res.status(400).json({ message: "Missing fields" });
     }
@@ -37,11 +37,17 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
     const userRepo = AppDataSource.getRepository(User);
     const offerRepo = AppDataSource.getRepository(Offer);
 
-    // Pehle se pending requests ko cancel karein
-    await requestRepo.update(
-      { user: { id: user.id }, status: In(["pending", "accepted"]) },
-      { status: "cancelled" },
-    );
+    // --- FIX: Use QueryBuilder to avoid "FOR UPDATE" join error ---
+    await requestRepo
+      .createQueryBuilder()
+      .update(JobRequest)
+      .set({ status: "cancelled" })
+      .where("userId = :id", { id: user.id })
+      .andWhere("status IN (:...statuses)", {
+        statuses: ["pending", "accepted"],
+      })
+      .execute();
+
     io.to(`user_${user.id}`).emit("request:cleared_previous");
 
     // Database se online helpers nikalein (Price calculation ke liye)
@@ -90,14 +96,12 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
     for (const mechanic of onlineMechanics.values()) {
       if (mechanic.isBusy || !mechanic.lat || !mechanic.lng) continue;
 
-      // Distance calculate karein (KM mein)
       const dist =
         getDistance(
           { latitude: lat, longitude: lng },
           { latitude: mechanic.lat, longitude: mechanic.lng },
         ) / 1000;
 
-      // Sirf select kiye gaye radius ke andar walay mechanics ko bhein
       if (dist <= searchRadius) {
         foundNearby = true;
         io.to(mechanic.socketId).emit("request:new", {
@@ -140,7 +144,6 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
       5 * 60 * 1000,
     );
 
-    // Final Response: Agar koi mechanic radius mein nahi mila to "noNearbyFound" bhein
     return res.status(201).json({
       message: foundNearby
         ? "Request created"

@@ -1,7 +1,8 @@
 import axios from "axios";
+import { ADMIN_API_URL } from "./runtime";
 
 export const adminApi = axios.create({
-  baseURL: "http://localhost:3000/api/admin",
+  baseURL: ADMIN_API_URL,
 });
 
 // Attach token to every request
@@ -12,3 +13,15 @@ adminApi.interceptors.request.use((config) => {
   }
   return config;
 });
+
+adminApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("adminToken");
+      window.location.assign("/login");
+    }
+
+    return Promise.reject(error);
+  },
+);

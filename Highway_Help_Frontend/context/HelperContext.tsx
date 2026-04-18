@@ -3,7 +3,7 @@ import {
   JobStage,
   Request,
   LatLng,
-} from "@/app/hooks/useHelperJob";
+} from "@/app/hooks/useHelperJob.stable";
 import React, { createContext, useContext } from "react";
 
 interface HelperContextType {
@@ -11,6 +11,8 @@ interface HelperContextType {
   helperLocation: LatLng | null;
   userLocation: LatLng | null;
   incomingRequests: Request[];
+  nearbyNotification: Request | null;
+  clearNearbyNotification: () => void;
   jobStage: JobStage;
   modalConfig: {
     visible: boolean;
@@ -33,6 +35,7 @@ interface HelperContextType {
     availableBalance: number;
   };
   toggleOnline: () => Promise<void>;
+  locationReady: boolean;
   sendOffer: (requestId: number, price: number) => Promise<boolean>;
   agreedPrice: number;
   cancelRide: () => Promise<void>;

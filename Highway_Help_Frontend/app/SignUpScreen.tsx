@@ -13,6 +13,10 @@ import {
 import api from "../api/api";
 import { router } from "expo-router";
 import { StatusModal } from "@/models/StatusModal";
+import { normalizePkPhoneNumber } from "@/lib/utils";
+import { persistSession } from "@/lib/auth-storage";
+import { useTheme } from "@/context/theme";
+import { uiRadii, uiShadows, uiSpacing } from "@/lib/ui/system";
 
 const CATEGORIES = [
   { id: "flat_tire", label: "Flat Tire" },
@@ -22,13 +26,14 @@ const CATEGORIES = [
 ];
 
 export default function SignUp() {
+  const { theme } = useTheme();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"user" | "helper">("user");
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
     title: string;
@@ -51,28 +56,58 @@ export default function SignUp() {
   };
 
   const handleSignUp = async () => {
-    if (!name || !email || !password) {
-      showModal("Missing Info", "Please fill out all fields.", "warning");
+    if (!name || !email || !phoneNumber || !password) {
+      showModal("Missing info", "Please fill out all fields.", "warning");
+      return;
+    }
+
+    const normalizedPhoneNumber = normalizePkPhoneNumber(phoneNumber);
+    if (!normalizedPhoneNumber) {
+      showModal(
+        "Invalid phone number",
+        "Enter a valid Pakistani mobile number like 03001234567.",
+        "warning",
+      );
       return;
     }
 
     setLoading(true);
     try {
-      const payload: any = { name, email, password, role };
-      if (role === "helper") payload.categories = categories;
+      const payload: {
+        name: string;
+        email: string;
+        phoneNumber: string;
+        password: string;
+        role: "user" | "helper";
+        categories?: string[];
+      } = {
+        name,
+        email,
+        phoneNumber: normalizedPhoneNumber,
+        password,
+        role,
+      };
 
-      await api.post("/auth/register", payload);
+      if (role === "helper") {
+        payload.categories = categories;
+      }
 
-      // Success Modal
-      showModal("Welcome!", "Account created successfully.", "success");
+      const response = await api.post("/auth/register", payload);
+      const { accessToken, refreshToken, user } = response.data;
+      await persistSession(accessToken, user, refreshToken);
 
-      // Navigate after a short delay so they can see the success state
+      showModal("Welcome aboard", "Your account is ready to go.", "success");
+
       setTimeout(() => {
         setModalConfig(null);
-        router.replace("/SignIn");
-      }, 2000);
+        router.replace("/(tabs)");
+      }, 1600);
     } catch (err) {
-      showModal("Error", "Sign up failed. Please try again.", "error");
+      showModal(
+        "Sign up failed",
+        "Please review your details and try again.",
+        "error",
+      );
     } finally {
       setLoading(false);
     }
@@ -81,117 +116,198 @@ export default function SignUp() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, backgroundColor: "#FFF" }}
+      style={[styles.screen, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join our community today</Text>
-        </View>
-
-        <View style={styles.form}>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput
-            placeholder="Muhammad Ullah"
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-          />
-
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            placeholder="name@example.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-          />
-
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            placeholder="••••••••"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-          />
-
-          <Text style={styles.label}>I want to...</Text>
-          <View style={styles.roleContainer}>
-            <TouchableOpacity
-              style={[styles.roleTab, role === "user" && styles.activeTab]}
-              onPress={() => setRole("user")}
-            >
-              <Text
-                style={[
-                  styles.roleTabText,
-                  role === "user" && styles.activeTabText,
-                ]}
-              >
-                Get Help
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.roleTab, role === "helper" && styles.activeTab]}
-              onPress={() => setRole("helper")}
-            >
-              <Text
-                style={[
-                  styles.roleTabText,
-                  role === "helper" && styles.activeTabText,
-                ]}
-              >
-                Be a Helper
-              </Text>
-            </TouchableOpacity>
+        <View
+          style={[
+            styles.panel,
+            {
+              backgroundColor: theme.colors.card,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <View style={styles.header}>
+            <Text style={[styles.eyebrow, { color: theme.colors.primary }]}>
+              Join Highway Help
+            </Text>
+            <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+              Create Account
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}> 
+              Set up your profile for roadside help or helper operations.
+            </Text>
           </View>
 
-          {role === "helper" && (
-            <View style={styles.categorySection}>
-              <Text style={styles.label}>Services You Provide</Text>
-              <View style={styles.chipContainer}>
-                {CATEGORIES.map((cat) => {
-                  const isActive = categories.includes(cat.id);
-                  return (
-                    <TouchableOpacity
-                      key={cat.id}
-                      onPress={() => toggleCategory(cat.id)}
-                      style={[styles.chip, isActive && styles.activeChip]}
+          <View style={styles.form}>
+            <Text style={[styles.label, { color: theme.colors.text.primary }]}>Full Name</Text>
+            <TextInput
+              placeholder="Muhammad Ullah"
+              placeholderTextColor={theme.colors.input.placeholder}
+              value={name}
+              onChangeText={setName}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  color: theme.colors.text.primary,
+                },
+              ]}
+            />
+
+            <Text style={[styles.label, { color: theme.colors.text.primary }]}>Email</Text>
+            <TextInput
+              placeholder="name@example.com"
+              placeholderTextColor={theme.colors.input.placeholder}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  color: theme.colors.text.primary,
+                },
+              ]}
+            />
+
+            <Text style={[styles.label, { color: theme.colors.text.primary }]}>Mobile Number</Text>
+            <TextInput
+              placeholder="03001234567"
+              placeholderTextColor={theme.colors.input.placeholder}
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  color: theme.colors.text.primary,
+                },
+              ]}
+            />
+
+            <Text style={[styles.label, { color: theme.colors.text.primary }]}>Password</Text>
+            <TextInput
+              placeholder="Minimum 8 characters"
+              placeholderTextColor={theme.colors.input.placeholder}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  color: theme.colors.text.primary,
+                },
+              ]}
+            />
+
+            <Text style={[styles.label, { color: theme.colors.text.primary }]}>I want to...</Text>
+            <View style={[styles.roleContainer, { backgroundColor: theme.colors.surface }]}>
+              {(["user", "helper"] as const).map((currentRole) => {
+                const active = role === currentRole;
+                return (
+                  <TouchableOpacity
+                    key={currentRole}
+                    style={[
+                      styles.roleTab,
+                      active && {
+                        backgroundColor: theme.colors.card,
+                        borderColor: theme.colors.primary,
+                      },
+                    ]}
+                    onPress={() => setRole(currentRole)}
+                  >
+                    <Text
+                      style={[
+                        styles.roleTabText,
+                        {
+                          color: active
+                            ? theme.colors.primary
+                            : theme.colors.text.secondary,
+                        },
+                      ]}
                     >
-                      <Text
+                      {currentRole === "user" ? "Get Help" : "Be a Helper"}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {role === "helper" ? (
+              <View style={styles.categorySection}>
+                <Text style={[styles.label, { color: theme.colors.text.primary }]}>
+                  Services You Provide
+                </Text>
+                <View style={styles.chipContainer}>
+                  {CATEGORIES.map((cat) => {
+                    const isActive = categories.includes(cat.id);
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        onPress={() => toggleCategory(cat.id)}
                         style={[
-                          styles.chipText,
-                          isActive && styles.activeChipText,
+                          styles.chip,
+                          {
+                            backgroundColor: isActive
+                              ? theme.colors.primary
+                              : theme.colors.surface,
+                            borderColor: isActive
+                              ? theme.colors.primary
+                              : theme.colors.border,
+                          },
                         ]}
                       >
-                        {cat.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        <Text
+                          style={[
+                            styles.chipText,
+                            {
+                              color: isActive
+                                ? "#FFFFFF"
+                                : theme.colors.text.secondary,
+                            },
+                          ]}
+                        >
+                          {cat.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
-          )}
+            ) : null}
 
-          <TouchableOpacity
-            style={[styles.signUpButton, loading && { opacity: 0.7 }]}
-            onPress={handleSignUp}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.buttonText}>Sign Up</Text>
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.signUpButton,
+                { backgroundColor: theme.colors.primary },
+                loading && { opacity: 0.7 },
+              ]}
+              onPress={handleSignUp}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.buttonText}>Create Account</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
-      {modalConfig && (
+      {modalConfig ? (
         <StatusModal
           visible={modalConfig.visible}
           title={modalConfig.title}
@@ -199,80 +315,79 @@ export default function SignUp() {
           type={modalConfig.type}
           onClose={() => setModalConfig(null)}
         />
-      )}
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, paddingTop: 60 },
-  header: { marginBottom: 32 },
-  title: { fontSize: 30, fontWeight: "800", color: "#1A1A1A" },
-  subtitle: { fontSize: 16, color: "#666", marginTop: 4 },
+  screen: { flex: 1 },
+  container: {
+    padding: 24,
+    paddingTop: 44,
+    paddingBottom: 56,
+  },
+  panel: {
+    borderWidth: 1,
+    borderRadius: uiRadii.xxl,
+    padding: uiSpacing.xl,
+    ...uiShadows.card,
+  },
+  header: { marginBottom: 24 },
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+    marginBottom: 10,
+  },
+  title: { fontSize: 30, fontWeight: "800" },
+  subtitle: { fontSize: 15, lineHeight: 22, marginTop: 6 },
   form: { width: "100%" },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#1A1A1A",
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: "#F5F7FA",
     height: 54,
     borderRadius: 14,
     paddingHorizontal: 16,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#E1E8ED",
   },
   roleContainer: {
     flexDirection: "row",
-    backgroundColor: "#F5F7FA",
     padding: 4,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 10,
   },
   roleTab: {
     flex: 1,
     paddingVertical: 12,
     alignItems: "center",
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
-  activeTab: {
-    backgroundColor: "#FFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  roleTabText: { fontWeight: "600", color: "#666" },
-  activeTabText: { color: "#4F46E5" },
+  roleTabText: { fontWeight: "700" },
   categorySection: { marginTop: 10 },
   chipContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 10,
+    borderRadius: uiRadii.pill,
     borderWidth: 1,
-    borderColor: "#E1E8ED",
-    backgroundColor: "#FFF",
   },
-  activeChip: {
-    backgroundColor: "#4F46E5",
-    borderColor: "#4F46E5",
-  },
-  chipText: { color: "#666", fontWeight: "500" },
-  activeChipText: { color: "#FFF" },
+  chipText: { fontWeight: "700" },
   signUpButton: {
-    backgroundColor: "#1A1A1A",
     height: 56,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 32,
-    marginBottom: 40,
+    ...uiShadows.soft,
   },
   buttonText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
 });

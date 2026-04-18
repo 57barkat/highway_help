@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useColorScheme } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { darkUiColors, lightUiColors } from "@/lib/ui/system";
 
 export interface Theme {
   colors: {
@@ -52,19 +54,47 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [mode, setMode] = useState<ThemeMode>("auto");
   const systemColorScheme = useColorScheme();
+  const [isReady, setIsReady] = useState(false);
 
-  const currentTheme =
-    mode === "auto"
-      ? systemColorScheme === "dark"
+  useEffect(() => {
+    const loadMode = async () => {
+      try {
+        const storedMode = await AsyncStorage.getItem("theme_mode");
+        if (
+          storedMode === "light" ||
+          storedMode === "dark" ||
+          storedMode === "auto"
+        ) {
+          setMode(storedMode);
+        }
+      } finally {
+        setIsReady(true);
+      }
+    };
+
+    loadMode();
+  }, []);
+
+  const currentTheme = useMemo(
+    () =>
+      mode === "auto"
+        ? systemColorScheme === "dark"
+          ? darkTheme
+          : lightTheme
+        : mode === "dark"
         ? darkTheme
-        : lightTheme
-      : mode === "dark"
-      ? darkTheme
-      : lightTheme;
+        : lightTheme,
+    [mode, systemColorScheme],
+  );
 
   const updateTheme = (newMode: ThemeMode) => {
     setMode(newMode);
+    AsyncStorage.setItem("theme_mode", newMode).catch(() => {});
   };
+
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <ThemeContext.Provider
@@ -77,26 +107,26 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const lightTheme: Theme = {
   colors: {
-    primary: "#8332f5",
-    primaryDark: "#5918ae",
-    primaryLight: "#a986ff",
-    success: "#8332f5",
-    warning: "#FFA726",
-    error: "#D32F2F",
-    info: "#42A5F5",
-    background: "#FFFFFF",
-    surface: "#F5F5F5",
+    primary: lightUiColors.accent,
+    primaryDark: lightUiColors.accentDark,
+    primaryLight: "#7AD6D2",
+    success: lightUiColors.success,
+    warning: lightUiColors.warning,
+    error: lightUiColors.danger,
+    info: lightUiColors.info,
+    background: lightUiColors.canvas,
+    surface: lightUiColors.surface,
     text: {
-      primary: "#000000",
-      secondary: "#666666",
-      disabled: "#CCCCCC",
+      primary: lightUiColors.ink,
+      secondary: lightUiColors.muted,
+      disabled: lightUiColors.mutedSoft,
     },
-    border: "#E0E0E0",
-    card: "#FFFFFF",
+    border: lightUiColors.border,
+    card: lightUiColors.card,
     input: {
       background: "#FFFFFF",
-      border: "#E0E0E0",
-      placeholder: "#999999",
+      border: lightUiColors.border,
+      placeholder: lightUiColors.mutedSoft,
     },
   },
   isDark: false,
@@ -104,26 +134,26 @@ export const lightTheme: Theme = {
 
 export const darkTheme: Theme = {
   colors: {
-    primary: "#8332f5",
-    primaryDark: "#5918ae",
-    primaryLight: "#a986ff",
-    success: "#8332f5",
-    warning: "#FFA726",
-    error: "#D32F2F",
-    info: "#42A5F5",
-    background: "#121212",
-    surface: "#1E1E1E",
+    primary: darkUiColors.accent,
+    primaryDark: darkUiColors.accentDark,
+    primaryLight: "#8BE0DD",
+    success: darkUiColors.success,
+    warning: darkUiColors.warning,
+    error: darkUiColors.danger,
+    info: darkUiColors.info,
+    background: darkUiColors.canvas,
+    surface: darkUiColors.surface,
     text: {
-      primary: "#FFFFFF",
-      secondary: "#B3B3B3",
-      disabled: "#666666",
+      primary: darkUiColors.ink,
+      secondary: darkUiColors.muted,
+      disabled: darkUiColors.mutedSoft,
     },
-    border: "#333333",
-    card: "#1E1E1E",
+    border: darkUiColors.border,
+    card: darkUiColors.card,
     input: {
-      background: "#1E1E1E",
-      border: "#333333",
-      placeholder: "#666666",
+      background: "#12202A",
+      border: darkUiColors.border,
+      placeholder: darkUiColors.mutedSoft,
     },
   },
   isDark: true,

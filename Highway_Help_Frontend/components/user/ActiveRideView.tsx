@@ -1,13 +1,27 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import { styles } from "./UserStyles";
+import { buildWhatsAppUrl } from "@/lib/utils";
 
 export default function ActiveRideView({
   navigationData,
-  openNavigation,
   cancelRide,
 }: any) {
+  const handleWhatsApp = async () => {
+    const phoneNumber = navigationData?.helperPhoneNumber;
+    if (!phoneNumber) {
+      return;
+    }
+
+    const url = buildWhatsAppUrl(phoneNumber);
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    }
+  };
+
   return (
     <View style={[styles.headerContent, { paddingBottom: 20 }]}>
       <View
@@ -54,20 +68,37 @@ export default function ActiveRideView({
       </View>
 
       {navigationData && (
-        <TouchableOpacity
-          onPress={openNavigation}
-          style={{
-            marginTop: 15,
-            backgroundColor: "#2D5AF0",
-            paddingVertical: 12,
-            borderRadius: 12,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "white", fontWeight: "700" }}>
-            Track Helper
-          </Text>
-        </TouchableOpacity>
+        <View style={{ gap: 10, marginTop: 15 }}>
+          <View
+            style={{
+              backgroundColor: "#EEF4FF",
+              paddingVertical: 12,
+              borderRadius: 12,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: "#2D5AF0", fontWeight: "700" }}>
+              {navigationData.helperName
+                ? `Assigned Helper: ${navigationData.helperName}`
+                : "Helper assigned"}
+            </Text>
+          </View>
+          {navigationData.helperPhoneNumber ? (
+            <TouchableOpacity
+              onPress={handleWhatsApp}
+              style={{
+                backgroundColor: "#25D366",
+                paddingVertical: 12,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "white", fontWeight: "700" }}>
+                Contact on WhatsApp
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       )}
     </View>
   );

@@ -1,6 +1,6 @@
 import { useFonts } from "expo-font";
-import { Text, View, Platform } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { Text, View } from "react-native";
+import { Stack } from "expo-router";
 import React, { useState, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as NavigationBar from "expo-navigation-bar";
@@ -12,6 +12,7 @@ import * as SplashScreenExpo from "expo-splash-screen";
 import { AuthProvider, useAuth } from "../context/auth";
 import "../context/i18n";
 import { HelperProvider } from "@/context/HelperContext";
+import AppShell from "@/components/navigation/AppShell";
 
 // Prevent auto-hide of splash screen
 SplashScreenExpo.preventAutoHideAsync().catch(() => {});
@@ -27,17 +28,9 @@ const RootLayoutContent = () => {
   });
 
   useEffect(() => {
-    if (Platform.OS === "android") {
-      const hideNavBar = async () => {
-        try {
-          await NavigationBar.setBehaviorAsync("sticky-immersive" as any);
-          await NavigationBar.setVisibilityAsync("hidden");
-        } catch (error) {
-          console.warn("NavigationBar failed to hide:", error);
-        }
-      };
-      hideNavBar();
-    }
+    NavigationBar.setBehaviorAsync("inset-swipe").catch(() => {});
+    NavigationBar.setButtonStyleAsync("light").catch(() => {});
+    NavigationBar.setBackgroundColorAsync("#091017").catch(() => {});
 
     if (fontsLoaded || fontError) {
       SplashScreenExpo.hideAsync();
@@ -61,10 +54,9 @@ const RootLayoutContent = () => {
 
   return (
     <>
-      <StatusBar hidden={true} />
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
     </>
   );
@@ -76,7 +68,9 @@ const RootLayout = () => {
       <AuthProvider>
         <ThemeProvider>
           <HelperProvider>
-            <RootLayoutContent />
+            <AppShell>
+              <RootLayoutContent />
+            </AppShell>
           </HelperProvider>
         </ThemeProvider>
       </AuthProvider>

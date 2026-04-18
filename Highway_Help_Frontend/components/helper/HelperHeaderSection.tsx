@@ -1,6 +1,7 @@
 import React from "react";
-import { View, StatusBar, Platform, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { OnlineSlider } from "@/components/helper/OnlineSlider";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Props {
   online: boolean;
@@ -8,17 +9,14 @@ interface Props {
 }
 
 export default function HelperHeaderSection({ online, toggleOnline }: Props) {
-  // We use top margin instead of absolute positioning
-  const TOP_MARGIN =
-    Platform.OS === "ios" ? 10 : (StatusBar.currentHeight || 0) + 10;
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={{
-        marginTop: TOP_MARGIN,
-        marginBottom: 10,
         alignItems: "center",
         paddingHorizontal: 20,
+        paddingTop: Math.max(insets.top * 0.2, 0),
       }}
     >
       <View style={localStyles.sliderShadowWrapper}>

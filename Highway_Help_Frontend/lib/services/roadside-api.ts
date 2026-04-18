@@ -1,18 +1,12 @@
 // src/lib/services/roadside-api.ts
 import axios from "axios";
 import io from "socket.io-client";
+import { API_URL, BASE_URL, SOCKET_OPTIONS } from "@/lib/runtime";
+import type { ServiceType } from "@/lib/types";
 
 // ===========================
 // Types
 // ===========================
-export type ServiceType =
-  | "flat_tire"
-  | "fuel"
-  | "battery"
-  | "tow"
-  | "lockout"
-  | string;
-
 export interface LocationData {
   latitude: number;
   longitude: number;
@@ -43,7 +37,7 @@ export interface Helper {
 // ===========================
 // Axios instance
 // ===========================
-const API_BASE_URL = "http://192.168.100.173:3000/api";
+const API_BASE_URL = API_URL;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -57,8 +51,8 @@ let socket: any | null = null;
 
 export const connectSocket = (): any => {
   if (!socket) {
-    socket = io(API_BASE_URL.replace("/api", ""), {
-      transports: ["websocket"],
+    socket = io(BASE_URL, {
+      ...SOCKET_OPTIONS,
     });
 
     socket.on("connect", () => console.log("🔵 Socket connected:", socket?.id));

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { AppDataSource } from "../config/db";
-import { User, UserRole } from "../entities/User";
+import { User } from "../entities/User";
+import { verifyToken } from "../utils/auth.util";
 
 export interface AuthRequest extends Request {
   user?: User;
@@ -15,7 +15,7 @@ export const authMiddleware = async (
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Authorization header missing" });
     }
 
@@ -25,10 +25,10 @@ export const authMiddleware = async (
       return res.status(401).json({ message: "Token missing" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: number;
-      role: UserRole;
-    };
+    const decoded = verifyToken(token);
+    if (decoded.type !== "access") {
+      return res.status(401).json({ message: "Invalid access token" });
+    }
 
     const userRepo = AppDataSource.getRepository(User);
 

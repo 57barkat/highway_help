@@ -4,6 +4,7 @@ import { User, UserRole } from "../entities/User";
 import { Request as JobRequest } from "../entities/Request";
 import { AppSetting } from "../entities/AppSetting";
 import { onlineMechanics } from "..";
+import { normalizePhoneNumber } from "../utils/phone.util";
 
 export const getStats = async (req: Request, res: Response) => {
   try {
@@ -56,7 +57,7 @@ export const getUsers = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.id);
-    const { name, email } = req.body;
+    const { name, email, phoneNumber } = req.body;
     const userRepo = AppDataSource.getRepository(User);
 
     const user = await userRepo.findOne({
@@ -67,6 +68,13 @@ export const updateUser = async (req: Request, res: Response) => {
 
     if (name) user.name = name;
     if (email) user.email = email;
+    if (phoneNumber) {
+      const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+      if (!normalizedPhoneNumber) {
+        return res.status(400).json({ message: "Invalid phone number" });
+      }
+      user.phoneNumber = normalizedPhoneNumber;
+    }
 
     await userRepo.save(user);
 
@@ -226,6 +234,7 @@ export const getOnlineHelpers = async (req: Request, res: Response) => {
         id: helper.id,
         name: helper.name,
         email: helper.email,
+        phoneNumber: helper.phoneNumber,
         lat: liveData?.lat ?? helper.lat,
         lng: liveData?.lng ?? helper.lng,
         rating: helper.rating,

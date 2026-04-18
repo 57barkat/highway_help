@@ -5,16 +5,16 @@ import {
   StyleSheet,
   FlatList,
   Text,
-  Animated,
-  Dimensions,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
-import { useRescueRequest } from "../hooks/useRescueRequest";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRescueRequest } from "../hooks/useRescueRequest.stable";
 import { styles, mapStyle } from "../../components/user/UserStyles";
 import {
   UserMarker,
@@ -25,11 +25,14 @@ import RequestHelpForm from "../../components/user/RequestHelpForm";
 import ActiveRideView from "../../components/user/ActiveRideView";
 import { OfferCard } from "../../components/user/OfferCard";
 import { StatusModal } from "@/models/StatusModal";
-
-const { width } = Dimensions.get("window");
+import { useTheme } from "@/context/theme";
 
 export default function UserScreen() {
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const insets = useSafeAreaInsets();
+  const lastGeocodeRef = useRef<string | null>(null);
+  const { theme } = useTheme();
+
   const [description, setDescription] = useState("");
   const [ratingValue, setRatingValue] = useState(0);
   const [visibleOffers, setVisibleOffers] = useState<any[]>([]);
@@ -48,6 +51,8 @@ export default function UserScreen() {
 
   const {
     userLocation,
+    hasLocationPermission,
+    isLocationLoading,
     onlineMechanics,
     offers,
     isSearching,
@@ -61,11 +66,15 @@ export default function UserScreen() {
     navigationData,
     modalConfig,
     setModalConfig,
+    requestLocationAccess,
   } = useRescueRequest();
 
   useEffect(() => {
     (async () => {
       if (userLocation?.lat && userLocation?.lng) {
+        const geocodeKey = `${userLocation.lat.toFixed(3)}:${userLocation.lng.toFixed(3)}`;
+        if (lastGeocodeRef.current === geocodeKey) return;
+
         try {
           const reverseGeocode = await Location.reverseGeocodeAsync({
             latitude: userLocation.lat,
@@ -84,6 +93,7 @@ export default function UserScreen() {
               .join(", ");
 
             setAreaName(fullAddress || "Unknown Location");
+            lastGeocodeRef.current = geocodeKey;
           }
         } catch (error) {}
       }
@@ -104,7 +114,7 @@ export default function UserScreen() {
 
   const snapPoints = useMemo(() => {
     if (jobStage === "active") return ["40%"];
-    if (jobStage === "searching") return ["15%"];
+    if (jobStage === "searching") return ["18%"];
     return ["55%", "90%"];
   }, [jobStage]);
 
@@ -113,7 +123,7 @@ export default function UserScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    await requestHelp(description, problemType || "general", areaName);
+    await requestHelp(description, problemType || "General Help", areaName);
   };
 
   const handleDismissOffer = (id: number) => {
@@ -126,17 +136,54 @@ export default function UserScreen() {
 
   if (!userLocation) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading Map...</Text>
+      <View
+        style={[
+          localStyles.loadingState,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text
+          style={[
+            localStyles.loadingTitle,
+            { color: theme.colors.text.primary },
+          ]}
+        >
+          {isLocationLoading
+            ? "Getting your live location..."
+            : "Location access needed"}
+        </Text>
+        <Text
+          style={[
+            localStyles.loadingCopy,
+            { color: theme.colors.text.secondary },
+          ]}
+        >
+          {hasLocationPermission
+            ? "We need your current location before showing nearby helpers."
+            : "Enable location to view the map and request nearby roadside help."}
+        </Text>
+        {!isLocationLoading && (
+          <TouchableOpacity
+            style={[
+              localStyles.locationButton,
+              { backgroundColor: theme.colors.primary },
+            ]}
+            onPress={requestLocationAccess}
+          >
+            <Text style={localStyles.locationButtonText}>Enable Location</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+    >
       <StatusBar
-        barStyle="dark-content"
+        barStyle={theme.isDark ? "light-content" : "dark-content"}
         backgroundColor="transparent"
         translucent
       />
@@ -144,7 +191,7 @@ export default function UserScreen() {
       <MapView
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
-        customMapStyle={mapStyle}
+        customMapStyle={theme.isDark ? mapDarkStyle : mapStyle}
         initialRegion={{
           latitude: userLocation.lat,
           longitude: userLocation.lng,
@@ -192,22 +239,41 @@ export default function UserScreen() {
       </MapView>
 
       {visibleOffers.length > 0 && jobStage === "searching" && (
-        <View style={localStyles.floatingOfferContainer}>
-          <View style={localStyles.offerHeaderFloating}>
-            <View style={localStyles.pulse} />
-            <Text style={localStyles.floatingTitle}>Nearby Offers Found</Text>
+        <View
+          style={[localStyles.floatingOfferContainer, { top: insets.top + 20 }]}
+        >
+          <View
+            style={[
+              localStyles.offerHeaderFloating,
+              {
+                backgroundColor: theme.colors.card,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                localStyles.pulse,
+                { backgroundColor: theme.colors.success },
+              ]}
+            />
+            <Text
+              style={[
+                localStyles.floatingTitle,
+                { color: theme.colors.success },
+              ]}
+            >
+              Nearby Offers Found
+            </Text>
           </View>
           <FlatList
             data={visibleOffers}
             keyExtractor={(item: any) => item.id.toString()}
-            // Removed horizontal prop
-            // Removed showsHorizontalScrollIndicator
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
-              paddingVertical: 20,
               paddingHorizontal: 20,
+              paddingBottom: 100,
             }}
-            // Removed snapToInterval and decelerationRate as they are usually for carousels
             renderItem={({ item }) => (
               <OfferCard
                 item={item}
@@ -223,16 +289,28 @@ export default function UserScreen() {
         ref={bottomSheetRef}
         index={0}
         snapPoints={snapPoints}
+        topInset={insets.top + 10}
+        bottomInset={insets.bottom + 10}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
         handleIndicatorStyle={{
-          backgroundColor: "#E2E8F0",
-          width: 50,
-          height: 5,
+          backgroundColor: theme.colors.border,
+          width: 40,
         }}
-        backgroundStyle={{ borderRadius: 32, elevation: 20 }}
+        backgroundStyle={{
+          borderRadius: 32,
+          backgroundColor: theme.colors.card,
+          borderWidth: theme.isDark ? 1 : 0,
+          borderColor: theme.colors.border,
+        }}
       >
-        <BottomSheetView style={{ flex: 1 }}>
+        <BottomSheetView style={{ flex: 1, paddingHorizontal: 4 }}>
           {jobStage === "active" ? (
-            <ActiveRideView cancelRide={cancelRide} />
+            <ActiveRideView
+              cancelRide={cancelRide}
+              navigationData={navigationData}
+            />
           ) : (
             <RequestHelpForm
               description={description}
@@ -250,6 +328,7 @@ export default function UserScreen() {
           )}
         </BottomSheetView>
       </BottomSheet>
+
       {modalConfig && (
         <StatusModal
           visible={modalConfig.visible}
@@ -259,6 +338,7 @@ export default function UserScreen() {
           onClose={() => setModalConfig(null)}
         />
       )}
+
       <RatingOverlay
         visible={!!ratingVisible}
         ratingValue={ratingValue || 0}
@@ -269,40 +349,59 @@ export default function UserScreen() {
   );
 }
 
+const mapDarkStyle = [
+  { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#38414e" }],
+  },
+];
+
 const localStyles = StyleSheet.create({
+  loadingState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  loadingTitle: { marginTop: 16, fontSize: 22, fontWeight: "900" },
+  loadingCopy: {
+    marginTop: 8,
+    textAlign: "center",
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  locationButton: {
+    marginTop: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 16,
+  },
+  locationButtonText: { color: "#FFFFFF", fontWeight: "800", fontSize: 16 },
   floatingOfferContainer: {
     position: "absolute",
-    top: 60,
     left: 0,
     right: 0,
     zIndex: 10,
-    paddingVertical: 10,
   },
   offerHeaderFloating: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.95)",
     alignSelf: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 15,
+    paddingVertical: 10,
+    borderRadius: 25,
+    marginBottom: 12,
+    borderWidth: 1,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  floatingTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#059669",
-    marginLeft: 8,
-  },
-  pulse: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#10B981",
-  },
+  floatingTitle: { fontSize: 14, fontWeight: "900", marginLeft: 8 },
+  pulse: { width: 10, height: 10, borderRadius: 5 },
 });

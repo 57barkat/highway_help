@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import HelperScreen from "../screens/HelperScreen";
 import UserScreen from "../screens/UserScreen";
+import { getStoredUser } from "@/lib/auth-storage";
 
 interface StoredUser {
   id: number;
@@ -14,7 +14,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const raw = await AsyncStorage.getItem("app_user");
+      const raw = await getStoredUser();
       if (!raw) return;
 
       const user: StoredUser = JSON.parse(raw);

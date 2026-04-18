@@ -2,7 +2,8 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ActionButton } from "../../components/helper/HelperSubComponents";
-import { Colors } from "@/app/constants/Colors";
+import { useTheme } from "@/context/theme";
+import { uiRadii, uiSpacing } from "@/lib/ui/system";
 
 interface Props {
   jobStage: string;
@@ -19,14 +20,20 @@ const HelperWorkflowSection = ({
   setShowPriceModal,
   cancelRide,
 }: Props) => {
+  const { theme } = useTheme();
+
   if (jobStage === "idle") return null;
 
   const stages = ["navigating", "arrived", "working"];
   const currentStep = stages.indexOf(jobStage);
 
   return (
-    <View style={localStyles.container}>
-      <View style={localStyles.handle} />
+    <View
+      style={[localStyles.container, { backgroundColor: theme.colors.card }]}
+    >
+      <View
+        style={[localStyles.handle, { backgroundColor: theme.colors.border }]}
+      />
 
       <View style={localStyles.progressRow}>
         {stages.map((_, index) => (
@@ -36,7 +43,11 @@ const HelperWorkflowSection = ({
               localStyles.progressBar,
               {
                 backgroundColor:
-                  index <= currentStep ? Colors.primary : "#E2E8F0",
+                  index <= currentStep
+                    ? theme.colors.primary
+                    : theme.isDark
+                      ? "#334155"
+                      : "#E2E8F0",
               },
             ]}
           />
@@ -51,7 +62,7 @@ const HelperWorkflowSection = ({
               label="I HAVE ARRIVED"
               onPress={markArrived}
               icon="location"
-              color={Colors.primary}
+              color={theme.colors.primary}
             />
           </View>
         )}
@@ -63,7 +74,7 @@ const HelperWorkflowSection = ({
               label="START WORKING"
               onPress={startWork}
               icon="play"
-              color="#8B5CF6"
+              color="#8B5CF6" // Purple stands out for "Action"
             />
           </View>
         )}
@@ -75,20 +86,31 @@ const HelperWorkflowSection = ({
               label="MARK AS FINISHED"
               onPress={() => setShowPriceModal(true)}
               icon="checkmark-done"
-              color={Colors.success}
+              color={theme.colors.success || "#10B981"}
             />
           </View>
         )}
       </View>
 
       {jobStage !== "working" && (
-        <TouchableOpacity onPress={cancelRide} style={localStyles.cancelBtn}>
+        <TouchableOpacity
+          onPress={cancelRide}
+          style={localStyles.cancelBtn}
+          activeOpacity={0.7}
+        >
           <Ionicons
             name="close-circle-outline"
             size={16}
-            color={Colors.danger}
+            color={theme.colors.error || "#F43F5E"}
           />
-          <Text style={localStyles.cancelText}>CANCEL RIDE</Text>
+          <Text
+            style={[
+              localStyles.cancelText,
+              { color: theme.colors.error || "#F43F5E" },
+            ]}
+          >
+            CANCEL RIDE
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -97,10 +119,9 @@ const HelperWorkflowSection = ({
 
 const localStyles = StyleSheet.create({
   container: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 20,
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
+    paddingHorizontal: uiSpacing.xl,
     paddingBottom: 40,
     elevation: 25,
     shadowColor: "#000",
@@ -109,43 +130,48 @@ const localStyles = StyleSheet.create({
     shadowRadius: 10,
   },
   handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: "#E2E8F0",
-    borderRadius: 2,
+    width: 45,
+    height: 5,
+    borderRadius: 10,
     alignSelf: "center",
     marginTop: 12,
-    marginBottom: 20,
+    marginBottom: 25,
   },
   progressRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 8,
-    marginBottom: 25,
+    gap: 10,
+    marginBottom: 30,
   },
-  progressBar: { height: 4, width: 60, borderRadius: 2 },
-  content: { marginBottom: 15 },
+  progressBar: {
+    height: 6,
+    width: 70,
+    borderRadius: 3,
+  },
+  content: {
+    marginBottom: 10,
+  },
   stepText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "900",
     color: "#94A3B8",
     textAlign: "center",
-    marginBottom: 15,
-    letterSpacing: 1.5,
+    marginBottom: 20,
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
   cancelBtn: {
-    marginTop: 15,
+    marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
-    padding: 10,
+    padding: 12,
   },
   cancelText: {
-    color: Colors.danger,
     fontWeight: "800",
-    fontSize: 11,
-    marginLeft: 5,
+    fontSize: 12,
+    marginLeft: 6,
     letterSpacing: 1,
   },
 });

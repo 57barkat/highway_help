@@ -11,16 +11,17 @@ import {
   StatusBar,
 } from "react-native";
 import api from "../api/api";
-import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusModal } from "@/models/StatusModal";
+import { persistSession } from "@/lib/auth-storage";
+import { useTheme } from "@/context/theme";
+import { uiRadii, uiShadows, uiSpacing } from "@/lib/ui/system";
 
 export default function SignInScreen() {
+  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
     title: string;
@@ -44,16 +45,14 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       const res = await api.post("/auth/login", { email, password });
-      const { token, user } = res.data;
+      const { accessToken, refreshToken, user } = res.data;
 
-      await AsyncStorage.setItem("app_token", token);
-      await AsyncStorage.setItem("app_user", JSON.stringify(user));
-
+      await persistSession(accessToken, user, refreshToken);
       router.replace("/(tabs)");
     } catch (err) {
       showModal(
-        "Login Failed",
-        "Invalid credentials, please try again.",
+        "Login failed",
+        "Invalid credentials. Double-check your email and password.",
         "error",
       );
     } finally {
@@ -64,60 +63,115 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} />
 
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to access your dashboard</Text>
-      </View>
-
-      <View style={styles.form}>
-        <Text style={styles.label}>Email Address</Text>
-        <TextInput
-          placeholder="name@example.com"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          placeholder="••••••••"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-        />
-
-        <TouchableOpacity
-          style={[styles.loginButton, loading && styles.disabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* --- SIGN UP NAVIGATION BUTTON --- */}
-        <TouchableOpacity
-          style={styles.signupLink}
-          onPress={() => router.push("./SignUpScreen")}
-        >
-          <Text style={styles.signupText}>
-            Don't have an account?{" "}
-            <Text style={styles.signupHighlight}>Sign Up</Text>
+      <View
+        style={[
+          styles.panel,
+          {
+            backgroundColor: theme.colors.card,
+            borderColor: theme.colors.border,
+          },
+        ]}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.eyebrow, { color: theme.colors.primary }]}>
+            Highway Help
           </Text>
-        </TouchableOpacity>
+          <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+            Welcome back
+          </Text>
+          <Text
+            style={[styles.subtitle, { color: theme.colors.text.secondary }]}
+          >
+            Sign in to manage live rescue activity with a cleaner, faster mobile
+            workspace.
+          </Text>
+        </View>
+
+        <View style={styles.form}>
+          <Text style={[styles.label, { color: theme.colors.text.primary }]}>
+            Email Address
+          </Text>
+          <TextInput
+            placeholder="name@example.com"
+            placeholderTextColor={theme.colors.input.placeholder}
+            value={email}
+            onChangeText={setEmail}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+                color: theme.colors.text.primary,
+              },
+            ]}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+
+          <Text style={[styles.label, { color: theme.colors.text.primary }]}>
+            Password
+          </Text>
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor={theme.colors.input.placeholder}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+                color: theme.colors.text.primary,
+              },
+            ]}
+          />
+
+          <TouchableOpacity
+            style={[
+              styles.loginButton,
+              { backgroundColor: theme.colors.primary },
+              loading && styles.disabled,
+            ]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.buttonText}>Sign In</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.signupLink,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              },
+            ]}
+            onPress={() => router.push("./SignUpScreen")}
+          >
+            <Text
+              style={[styles.signupText, { color: theme.colors.text.secondary }]}
+            >
+              Need an account?
+            </Text>
+            <Text
+              style={[styles.signupHighlight, { color: theme.colors.primary }]}
+            >
+              Create one now
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {modalConfig && (
+      {modalConfig ? (
         <StatusModal
           visible={modalConfig.visible}
           title={modalConfig.title}
@@ -125,7 +179,7 @@ export default function SignInScreen() {
           type={modalConfig.type}
           onClose={() => setModalConfig(null)}
         />
-      )}
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -133,59 +187,63 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
     padding: 24,
     justifyContent: "center",
   },
-  header: { marginBottom: 40 },
-  title: { fontSize: 32, fontWeight: "800", color: "#111827", marginBottom: 8 },
-  subtitle: { fontSize: 16, color: "#6B7280" },
+  panel: {
+    borderWidth: 1,
+    borderRadius: uiRadii.xxl,
+    padding: uiSpacing.xl,
+    ...uiShadows.card,
+  },
+  header: { marginBottom: 36 },
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+    marginBottom: 10,
+  },
+  title: { fontSize: 32, fontWeight: "800", marginBottom: 8 },
+  subtitle: { fontSize: 15, lineHeight: 22 },
   form: { width: "100%" },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
     marginBottom: 8,
     marginLeft: 4,
   },
   input: {
-    backgroundColor: "#F9FAFB",
     height: 56,
     borderRadius: 16,
     paddingHorizontal: 20,
     marginBottom: 20,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
     fontSize: 16,
-    color: "#111827",
   },
   loginButton: {
-    backgroundColor: "#00A99D",
     height: 58,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
-    shadowColor: "#00A99D",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    ...uiShadows.soft,
   },
   disabled: { opacity: 0.7 },
   buttonText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
-
-  // --- NEW SIGNUP STYLES ---
   signupLink: {
     marginTop: 24,
     alignItems: "center",
+    borderWidth: 1,
+    borderRadius: uiRadii.lg,
+    paddingVertical: 14,
   },
   signupText: {
-    fontSize: 15,
-    color: "#6B7280",
+    fontSize: 13,
+    fontWeight: "600",
   },
   signupHighlight: {
-    color: "#00A99D",
+    marginTop: 4,
     fontWeight: "700",
   },
 });

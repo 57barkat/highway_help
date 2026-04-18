@@ -32,8 +32,17 @@ export class User {
   @Column({ type: "varchar", unique: true })
   email!: string;
 
+  @Column({ type: "varchar", length: 20, unique: true, nullable: true })
+  phoneNumber!: string | null;
+
   @Column({ type: "varchar" })
   password!: string;
+
+  @Column({ type: "text", nullable: true, select: false })
+  refreshTokenHash!: string | null;
+
+  @Column({ type: "timestamp", nullable: true })
+  refreshTokenExpiresAt!: Date | null;
 
   /* ======================
       LOCATION (REAL-TIME)

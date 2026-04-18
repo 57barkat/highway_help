@@ -4,7 +4,7 @@ import {
   handleSafepayWebhook,
   handlePaymentSuccess,
   getPaymentStatus,
-} from "../controllers/payment.controller";
+} from "../controllers/payment.secure.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = express.Router();

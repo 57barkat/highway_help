@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Alert, Platform } from "react-native";
 import io from "socket.io-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
-
-const API_URL = "http://192.168.100.173:3000";
+import * as SecureStore from "expo-secure-store";
+import { API_URL, BASE_URL, SOCKET_OPTIONS } from "@/lib/runtime";
 
 export interface Request {
   requestId: number;
@@ -34,6 +33,7 @@ export type JobStage =
 export const useHelperJob = () => {
   const socketRef = useRef<any | null>(null);
   const locationWatcherRef = useRef<Location.LocationSubscription | null>(null);
+  const lastLocationEmitRef = useRef(0);
   const [online, setOnline] = useState(false);
   const [helperLocation, setHelperLocation] = useState<LatLng | null>(null);
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);
@@ -76,33 +76,18 @@ export const useHelperJob = () => {
   }, [activeRequestId]);
 
   const fetchStats = async () => {
-    try {
-      const token = await AsyncStorage.getItem("app_token");
-      if (!token) return;
-      const statsRes = await fetch(`${API_URL}/api/helper/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        setStats({
-          rating: Number(statsData.rating || 0),
-          earnings: Number(statsData.earnings || 0),
-          count: Number(statsData.count || 0),
-          availableBalance: Number(statsData.availableBalance || 0),
-        });
-      }
-    } catch (err) {}
+    return;
   };
 
   useEffect(() => {
     let isMounted = true;
     const init = async () => {
       await fetchStats();
-      const token = await AsyncStorage.getItem("app_token");
+      const token = await SecureStore.getItemAsync("app_token");
       if (!token || !isMounted) return;
 
-      socketRef.current = io(API_URL, {
-        transports: ["websocket"],
+      socketRef.current = io(BASE_URL, {
+        ...SOCKET_OPTIONS,
         auth: { token },
       });
 
@@ -240,13 +225,22 @@ export const useHelperJob = () => {
       socketRef.current?.emit("mechanic:online");
 
       locationWatcherRef.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, distanceInterval: 5 },
+        {
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 15,
+          timeInterval: 12000,
+        },
         (loc) => {
           const lat = loc.coords.latitude;
           const lng = loc.coords.longitude;
+          const now = Date.now();
+          const shouldEmit = now - lastLocationEmitRef.current >= 4000;
           setHelperLocation({ lat, lng });
-          socketRef.current?.emit("mechanic:location", { lat, lng });
-          if (activeIdRef.current) {
+          if (shouldEmit) {
+            lastLocationEmitRef.current = now;
+            socketRef.current?.emit("mechanic:location", { lat, lng });
+          }
+          if (activeIdRef.current && shouldEmit) {
             socketRef.current?.emit("ride:location_update", {
               requestId: activeIdRef.current,
               lat,
@@ -270,8 +264,8 @@ export const useHelperJob = () => {
   ) => {
     if (!activeRequestId) return false;
     try {
-      const token = await AsyncStorage.getItem("app_token");
-      const res = await fetch(`${API_URL}/api/request/helper/${endpoint}`, {
+      const token = await SecureStore.getItemAsync("app_token");
+      const res = await fetch(`${API_URL}/request/helper/${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -310,8 +304,8 @@ export const useHelperJob = () => {
     setModalConfig,
     sendOffer: async (requestId: number, price: number) => {
       try {
-        const token = await AsyncStorage.getItem("app_token");
-        const res = await fetch(`${API_URL}/api/request/offer`, {
+        const token = await SecureStore.getItemAsync("app_token");
+        const res = await fetch(`${API_URL}/request/offer`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -334,8 +328,8 @@ export const useHelperJob = () => {
     cancelRide: async () => {
       if (!activeRequestId) return;
       try {
-        const token = await AsyncStorage.getItem("app_token");
-        const res = await fetch(`${API_URL}/api/request/cancel`, {
+        const token = await SecureStore.getItemAsync("app_token");
+        const res = await fetch(`${API_URL}/request/cancel`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

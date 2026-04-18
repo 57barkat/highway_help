@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getStoredUser } from "@/lib/auth-storage";
+import { getValidAccessToken } from "@/lib/auth-client";
 
 export default function Index() {
   const router = useRouter();
@@ -8,9 +9,10 @@ export default function Index() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const userId = await AsyncStorage.getItem("app_token");
+        const token = await getValidAccessToken();
+        const user = await getStoredUser();
 
-        if (userId) {
+        if (token && user) {
           // Navigate to tabs root (remove parentheses)
           router.replace("/(tabs)");
         } else {

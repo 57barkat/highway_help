@@ -6,6 +6,7 @@ interface Helper {
   id: number;
   name: string;
   email: string;
+  phoneNumber?: string | null;
   isVerified: boolean;
 }
 
@@ -44,6 +45,7 @@ const Helpers: React.FC = () => {
             <div className="helper-details">
               <h3>{h.name}</h3>
               <p>{h.email}</p>
+              <p>{h.phoneNumber || "No phone number"}</p>
             </div>
             <div className="helper-status">
               <span

@@ -84,7 +84,14 @@ function App() {
             }
           />
 
-          <Route path="/admin/live-helpers" element={<AdminLiveHelpersMap />} />
+          <Route
+            path="/admin/live-helpers"
+            element={
+              <ProtectedRoute>
+                <AdminLiveHelpersMap />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

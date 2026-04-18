@@ -1,7 +1,8 @@
 import React, { memo, useEffect, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Animated } from "react-native";
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/theme";
 import { mapStyle } from "../../components/helper/HelperStyles";
 
 interface Props {
@@ -17,131 +18,175 @@ export function HelperMapSection({
   jobStage,
   online,
 }: Props) {
+  const { theme } = useTheme();
   const mapRef = useRef<MapView>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Focus logic: Whenever userLocation changes, re-center the map to show both points
+  // Pulsing animation for the user's location
   useEffect(() => {
-    if (helperLocation && userLocation && mapRef.current) {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.5,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  // Center map when locations are available
+  useEffect(() => {
+    if (helperLocation?.lat && userLocation?.lat && mapRef.current) {
       mapRef.current.fitToCoordinates(
         [
           { latitude: helperLocation.lat, longitude: helperLocation.lng },
           { latitude: userLocation.lat, longitude: userLocation.lng },
         ],
         {
-          edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+          edgePadding: { top: 40, right: 40, bottom: 40, left: 40 },
           animated: true,
         },
       );
     }
-  }, [userLocation?.lat, userLocation?.lng]); // Depend on user location to refresh view
+  }, [userLocation?.lat, helperLocation?.lat]);
 
   return (
-    <MapView
-      ref={mapRef}
-      style={{ flex: 1 }}
-      provider={PROVIDER_GOOGLE}
-      customMapStyle={mapStyle}
-      initialRegion={{
-        latitude: helperLocation?.lat ?? 33.6844,
-        longitude: helperLocation?.lng ?? 73.0479,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      }}
-    >
-      {/* Mechanic Marker */}
-      {helperLocation && (
-        <Marker
-          coordinate={{
-            latitude: helperLocation.lat,
-            longitude: helperLocation.lng,
-          }}
-          flat
-          anchor={{ x: 0.5, y: 0.5 }}
-        >
-          <View
-            style={[
-              styles.markerContainer,
-              { borderColor: online ? "#10B981" : "#94A3B8" },
-            ]}
+    <View style={styles.container}>
+      <MapView
+        ref={mapRef}
+        style={StyleSheet.absoluteFillObject}
+        provider={PROVIDER_GOOGLE}
+        customMapStyle={mapStyle}
+        initialRegion={{
+          latitude: helperLocation?.lat ?? 33.6844,
+          longitude: helperLocation?.lng ?? 73.0479,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }}
+      >
+        {/* Helper/Mechanic Marker */}
+        {helperLocation?.lat && (
+          <Marker
+            coordinate={{
+              latitude: helperLocation.lat,
+              longitude: helperLocation.lng,
+            }}
+            flat
+            anchor={{ x: 0.5, y: 0.5 }}
           >
             <View
               style={[
-                styles.innerMarker,
-                { backgroundColor: online ? "#10B981" : "#94A3B8" },
+                styles.markerContainer,
+                {
+                  borderColor: online ? "#10B981" : "#94A3B8",
+                  backgroundColor: theme.colors.card,
+                },
               ]}
             >
-              <MaterialCommunityIcons name="moped" size={18} color="#FFF" />
-            </View>
-          </View>
-        </Marker>
-      )}
-
-      {/* User/Customer Marker */}
-      {userLocation && (
-        <>
-          <Marker
-            coordinate={{
-              latitude: userLocation.lat,
-              longitude: userLocation.lng,
-            }}
-          >
-            <View style={styles.customerMarkerOuter}>
-              <View style={styles.customerMarkerInner} />
+              <View
+                style={[
+                  styles.innerMarker,
+                  { backgroundColor: online ? "#10B981" : "#94A3B8" },
+                ]}
+              >
+                <MaterialCommunityIcons name="moped" size={18} color="#FFF" />
+              </View>
             </View>
           </Marker>
+        )}
 
-          {/* Premium Polyline */}
-          <Polyline
-            coordinates={[
-              { latitude: helperLocation.lat, longitude: helperLocation.lng },
-              { latitude: userLocation.lat, longitude: userLocation.lng },
-            ]}
-            strokeColor="#1E293B"
-            strokeWidth={3}
-            lineDashPattern={[2, 10]}
-          />
-        </>
-      )}
-    </MapView>
+        {/* User/Customer Marker */}
+        {userLocation?.lat && (
+          <>
+            <Marker
+              coordinate={{
+                latitude: userLocation.lat,
+                longitude: userLocation.lng,
+              }}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              <View style={styles.customerMarkerWrapper}>
+                <Animated.View
+                  style={[
+                    styles.customerMarkerPulse,
+                    { transform: [{ scale: pulseAnim }] },
+                  ]}
+                />
+                <View style={styles.customerMarkerInner} />
+              </View>
+            </Marker>
+
+            {/* Path Line */}
+            <Polyline
+              coordinates={[
+                { latitude: helperLocation.lat, longitude: helperLocation.lng },
+                { latitude: userLocation.lat, longitude: userLocation.lng },
+              ]}
+              strokeColor={theme.isDark ? "#94A3B8" : "#1E293B"}
+              strokeWidth={2.5}
+              lineDashPattern={[5, 5]}
+            />
+          </>
+        )}
+      </MapView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    overflow: "hidden",
+  },
   markerContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
     justifyContent: "center",
     alignItems: "center",
+    elevation: 5,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   innerMarker: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
-  customerMarkerOuter: {
+  customerMarkerWrapper: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  customerMarkerPulse: {
+    position: "absolute",
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "rgba(239, 68, 68, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "rgba(239, 68, 68, 0.3)",
   },
   customerMarkerInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: "#EF4444",
     borderWidth: 2,
     borderColor: "#FFF",
+    elevation: 4,
   },
 });
 

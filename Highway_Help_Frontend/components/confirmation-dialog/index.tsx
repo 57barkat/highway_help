@@ -9,7 +9,7 @@ import {
   AccessibilityInfo,
 } from "react-native";
 import { RoadsideService } from "@/lib/services/roadside-api";
-import { SERVICE_TYPES } from "@/lib/types";
+import { SERVICE_TYPES, ServiceType } from "@/lib/types";
 import { IconSymbol } from "@/components/icon-symbol";
 import { useTheme } from "@/context/theme";
 import { BlurView } from "expo-blur";
@@ -33,7 +33,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
   if (!service) return null;
 
-  const serviceInfo = SERVICE_TYPES[service.type];
+  const serviceInfo = SERVICE_TYPES[(service.type as ServiceType) || "other"];
 
   const handleConfirm = () => {
     AccessibilityInfo.announceForAccessibility(

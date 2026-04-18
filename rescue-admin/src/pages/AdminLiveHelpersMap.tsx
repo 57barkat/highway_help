@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { adminApi } from "../api/adminApi";
@@ -14,6 +14,7 @@ interface Helper {
   id: number;
   name: string;
   email: string;
+  phoneNumber?: string | null;
   lat: number;
   lng: number;
   rating: number;
@@ -86,6 +87,9 @@ const AdminLiveHelpersMap = () => {
                   ></span>
                 </div>
                 <div className="card-email">{helper.email}</div>
+                <div className="card-email">
+                  {helper.phoneNumber || "No phone number"}
+                </div>
                 <div className="card-earnings">
                   Earnings: Rs. {helper.totalEarnings.toLocaleString()}
                 </div>
@@ -127,6 +131,10 @@ const AdminLiveHelpersMap = () => {
                         <div className="info-row-detail">
                           <label>Email:</label>
                           <span>{helper.email}</span>
+                        </div>
+                        <div className="info-row-detail">
+                          <label>Phone:</label>
+                          <span>{helper.phoneNumber || "No phone number"}</span>
                         </div>
                         <div className="info-row-detail">
                           <label>Rating:</label>

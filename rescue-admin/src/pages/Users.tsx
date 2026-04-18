@@ -6,6 +6,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  phoneNumber?: string | null;
 }
 
 const Users: React.FC = () => {
@@ -13,7 +14,11 @@ const Users: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", email: "" });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    phoneNumber: "",
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -33,7 +38,11 @@ const Users: React.FC = () => {
 
   const startEdit = (user: User) => {
     setEditingId(user.id);
-    setEditForm({ name: user.name, email: user.email });
+    setEditForm({
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber || "",
+    });
   };
 
   const handleUpdate = async (id: number) => {
@@ -118,6 +127,16 @@ const Users: React.FC = () => {
                       }
                       placeholder="Email"
                     />
+                    <input
+                      value={editForm.phoneNumber}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          phoneNumber: e.target.value,
+                        })
+                      }
+                      placeholder="Phone number"
+                    />
                   </div>
                   <div className="edit-actions">
                     <button
@@ -143,6 +162,7 @@ const Users: React.FC = () => {
                     <div className="user-text">
                       <h3>{user.name}</h3>
                       <p>{user.email}</p>
+                      <p>{user.phoneNumber || "No phone number"}</p>
                     </div>
                   </div>
                   <div className="action-buttons">

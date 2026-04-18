@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { adminApi } from "../api/adminApi";
 
 interface AdminAuthContextType {
   adminToken: string | null;
@@ -27,7 +27,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [adminToken, navigate]);
 
   const login = async (email: string, password: string) => {
-    const res = await axios.post("http://localhost:3000/api/admin/login", {
+    const res = await adminApi.post("/login", {
       email,
       password,
     });

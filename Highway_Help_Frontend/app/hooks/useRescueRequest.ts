@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Alert, Platform } from "react-native";
 import io from "socket.io-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import * as Linking from "expo-linking";
-
-const API_URL = "http://192.168.100.173:3000";
+import * as SecureStore from "expo-secure-store";
+import { API_URL, BASE_URL, SOCKET_OPTIONS } from "@/lib/runtime";
 
 export interface Offer {
   id: number;
@@ -30,6 +29,7 @@ export interface Mechanic {
 
 export const useRescueRequest = () => {
   const socketRef = useRef<any | null>(null);
+  const lastLocationEmitRef = useRef(0);
 
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
@@ -77,7 +77,7 @@ export const useRescueRequest = () => {
 
     const init = async () => {
       console.log("🚀 [INIT] Initializing Rescue Hook...");
-      const token = await AsyncStorage.getItem("app_token");
+      const token = await SecureStore.getItemAsync("app_token");
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
@@ -90,12 +90,22 @@ export const useRescueRequest = () => {
         }
 
         locationWatcher = await Location.watchPositionAsync(
-          { accuracy: Location.Accuracy.High, distanceInterval: 5 },
+          {
+            accuracy: Location.Accuracy.Balanced,
+            distanceInterval: 15,
+            timeInterval: 12000,
+          },
           (newLoc) => {
             const { latitude: lat, longitude: lng } = newLoc.coords;
             if (isMounted) {
               setUserLocation({ lat, lng });
-              if (currentRequestIdRef.current && socketRef.current) {
+              const now = Date.now();
+              if (
+                currentRequestIdRef.current &&
+                socketRef.current &&
+                now - lastLocationEmitRef.current >= 4000
+              ) {
+                lastLocationEmitRef.current = now;
                 socketRef.current.emit("ride:location_update", {
                   requestId: currentRequestIdRef.current,
                   lat,
@@ -107,8 +117,8 @@ export const useRescueRequest = () => {
         );
       }
 
-      socketRef.current = io(API_URL, {
-        transports: ["websocket"],
+      socketRef.current = io(BASE_URL, {
+        ...SOCKET_OPTIONS,
         auth: { token },
       });
 
@@ -220,8 +230,8 @@ export const useRescueRequest = () => {
           setPeerLocation(null);
 
           try {
-            const token = await AsyncStorage.getItem("app_token");
-            const res = await fetch(`${API_URL}/api/request/cancel`, {
+            const token = await SecureStore.getItemAsync("app_token");
+            const res = await fetch(`${API_URL}/request/cancel`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -270,8 +280,8 @@ export const useRescueRequest = () => {
     setJobStage("searching");
 
     try {
-      const token = await AsyncStorage.getItem("app_token");
-      const res = await fetch(`${API_URL}/api/request/create`, {
+      const token = await SecureStore.getItemAsync("app_token");
+      const res = await fetch(`${API_URL}/request/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -338,8 +348,8 @@ export const useRescueRequest = () => {
 
   const acceptOffer = async (offerId: number) => {
     try {
-      const token = await AsyncStorage.getItem("app_token");
-      const res = await fetch(`${API_URL}/api/request/offer/accept`, {
+      const token = await SecureStore.getItemAsync("app_token");
+      const res = await fetch(`${API_URL}/request/offer/accept`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -369,8 +379,8 @@ export const useRescueRequest = () => {
   const submitRating = async (ratingValue: number) => {
     if (!currentRequestId) return;
     try {
-      const token = await AsyncStorage.getItem("app_token");
-      const res = await fetch(`${API_URL}/api/request/user/rate`, {
+      const token = await SecureStore.getItemAsync("app_token");
+      const res = await fetch(`${API_URL}/request/user/rate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
