@@ -10,15 +10,15 @@ import {
   ActivityIndicator,
   StatusBar,
 } from "react-native";
-import api from "../api/api";
 import { router } from "expo-router";
 import { StatusModal } from "@/models/StatusModal";
-import { persistSession } from "@/lib/auth-storage";
+import { useAuth } from "@/context/auth";
 import { useTheme } from "@/context/theme";
 import { uiRadii, uiShadows, uiSpacing } from "@/lib/ui/system";
 
 export default function SignInScreen() {
   const { theme } = useTheme();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,10 +44,10 @@ export default function SignInScreen() {
 
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", { email, password });
-      const { accessToken, refreshToken, user } = res.data;
-
-      await persistSession(accessToken, user, refreshToken);
+      const ok = await login(email, password);
+      if (!ok) {
+        throw new Error("login failed");
+      }
       router.replace("/(tabs)");
     } catch (err) {
       showModal(

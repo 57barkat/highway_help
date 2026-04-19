@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "yourway",
-    "slug": "yourway",
+    "name": "Helping Hand",
+    "slug": "helping-hand",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,23 +18,23 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow YourWay to access your location to show your position on the map."
+          "locationAlwaysAndWhenInUsePermission": "Allow Helping Hand to access your location to show your position on the map."
         }
       ]
     ],
 
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.yourway",
+      "bundleIdentifier": "com.anonymous.helpinghand",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "YourWay uses your location to show your current position on the map.",
-        "NSLocationAlwaysUsageDescription": "YourWay uses your location to provide navigation and nearby services.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "YourWay needs access to your location to show your position accurately."
+        "NSLocationWhenInUseUsageDescription": "Helping Hand uses your location to show your current position on the map.",
+        "NSLocationAlwaysUsageDescription": "Helping Hand uses your location to provide navigation and nearby services.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Helping Hand needs access to your location to show your position accurately."
       }
     },
 
     "android": {
-      "package": "com.anonymous.yourway",
+      "package": "com.anonymous.helpinghand",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
 

@@ -28,6 +28,9 @@ exports.io = new socket_io_1.Server(server, {
 });
 const ACTIVE_STATUSES = ["pending", "accepted", "arrived", "working"];
 const MAX_DISTANCE_KM = 5;
+const socketLog = (label, payload) => {
+    console.log(`[socket] ${new Date().toISOString()} ${label}`, payload ? JSON.stringify(payload) : "");
+};
 const getDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -96,6 +99,7 @@ const startServer = async () => {
         });
         exports.io.on("connection", async (socket) => {
             const userId = socket.userId;
+            socketLog("connection", { userId, socketId: socket.id });
             const userRepo = db_1.AppDataSource.getRepository(User_1.User);
             const requestRepo = db_1.AppDataSource.getRepository(Request_1.Request);
             // --- CRITICAL FIX: IMMEDIATE STATS PUSH ON CONNECTION ---
@@ -148,6 +152,13 @@ const startServer = async () => {
                 status: activeReq?.status || null,
                 hideOffers: activeReq && activeReq.status !== "pending",
             });
+            socketLog("ride:sync emitted", {
+                userId,
+                socketId: socket.id,
+                isOnline: dbUser?.isOnline || false,
+                requestId: activeReq?.id || null,
+                status: activeReq?.status || null,
+            });
             if (dbUser?.role === User_1.UserRole.HELPER &&
                 dbUser.isOnline &&
                 dbUser.availableBalance >= 0) {
@@ -162,6 +173,7 @@ const startServer = async () => {
                 performEmit();
             }
             socket.on("mechanic:online", async () => {
+                socketLog("mechanic:online received", { userId, socketId: socket.id });
                 const helperProfile = await userRepo.findOneBy({ id: userId });
                 if (helperProfile) {
                     // Send stats regardless of balance so UI is updated
@@ -189,6 +201,13 @@ const startServer = async () => {
                         isBusy: false,
                         availableBalance: helperProfile.availableBalance,
                     });
+                    socketLog("mechanic added to online map", {
+                        userId,
+                        socketId: socket.id,
+                        lat: helperProfile.lat || null,
+                        lng: helperProfile.lng || null,
+                        availableBalance: helperProfile.availableBalance,
+                    });
                     const pendingRequests = await requestRepo.find({
                         where: { status: "pending", helper: (0, typeorm_1.IsNull)() },
                         relations: ["user"],
@@ -203,6 +222,12 @@ const startServer = async () => {
                             helperProfile.lng) {
                             const distance = getDistance(helperProfile.lat, helperProfile.lng, req.lat, req.lng);
                             if (distance <= MAX_DISTANCE_KM) {
+                                socketLog("request:new emitted from backlog", {
+                                    helperUserId: userId,
+                                    requestId: req.id,
+                                    requestUserId: req.user.id,
+                                    distanceKm: Number(distance.toFixed(2)),
+                                });
                                 socket.emit("request:new", {
                                     requestId: req.id,
                                     userId: req.user.id,
@@ -223,6 +248,7 @@ const startServer = async () => {
                 performEmit();
             });
             socket.on("mechanic:offline", async () => {
+                socketLog("mechanic:offline received", { userId, socketId: socket.id });
                 const helperProfile = await userRepo.findOneBy({ id: userId });
                 if (helperProfile) {
                     helperProfile.isOnline = false;
@@ -233,6 +259,12 @@ const startServer = async () => {
                 performEmit();
             });
             socket.on("mechanic:location", async ({ lat, lng }) => {
+                socketLog("mechanic:location received", {
+                    userId,
+                    socketId: socket.id,
+                    lat,
+                    lng,
+                });
                 if (typeof lat !== "number" ||
                     typeof lng !== "number" ||
                     Number.isNaN(lat) ||
@@ -258,6 +290,13 @@ const startServer = async () => {
                     mech.lat = lat;
                     mech.lng = lng;
                     await userRepo.update({ id: userId }, { lat, lng });
+                    socketLog("mechanic location stored", {
+                        userId,
+                        socketId: socket.id,
+                        lat,
+                        lng,
+                        isBusy: mech.isBusy,
+                    });
                     emitMechanicsThrottled();
                 }
             });
@@ -288,6 +327,7 @@ const startServer = async () => {
                 performEmit();
             });
             socket.on("disconnect", async () => {
+                socketLog("disconnect", { userId, socketId: socket.id });
                 if (exports.onlineMechanics.has(userId)) {
                     exports.onlineMechanics.delete(userId);
                     await userRepo.update({ id: userId }, { isOnline: false });

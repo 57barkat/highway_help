@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert } from "react-native";
 import io from "socket.io-client";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { API_URL, BASE_URL, SOCKET_OPTIONS } from "@/lib/runtime";
 import { getStoredToken } from "@/lib/auth-storage";
 import { authFetch } from "@/lib/auth-client";
+import { useAuth } from "@/context/auth";
 import {
   AppCoordinates,
   distanceKmBetween,
@@ -58,6 +58,7 @@ const prioritizeRequests = (
 };
 
 export const useHelperJob = () => {
+  const { isAuthenticated, user } = useAuth();
   const socketRef = useRef<any | null>(null);
   const locationWatcherRef = useRef<Location.LocationSubscription | null>(null);
   const lastLocationEmitRef = useRef(0);
@@ -72,6 +73,8 @@ export const useHelperJob = () => {
   const [jobStage, setJobStage] = useState<JobStage>("idle");
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [locationReady, setLocationReady] = useState(false);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [socketConnected, setSocketConnected] = useState(false);
   const [nearbyNotification, setNearbyNotification] = useState<Request | null>(
     null,
   );
@@ -89,6 +92,12 @@ export const useHelperJob = () => {
     message: string;
     type: "success" | "error" | "info" | "warning";
   } | null>(null);
+  const helperLog = (label: string, payload?: unknown) => {
+    console.log(
+      `[helper-hook] ${new Date().toISOString()} ${label}`,
+      payload ?? {},
+    );
+  };
 
   const showModal = (
     title: string,
@@ -109,6 +118,31 @@ export const useHelperJob = () => {
   useEffect(() => {
     helperLocationRef.current = helperLocation;
   }, [helperLocation]);
+
+  const emitOnlinePresence = (coordinates?: LatLng | null) => {
+    const socket = socketRef.current;
+    if (!socket?.connected) {
+      helperLog("emitOnlinePresence skipped - socket not connected", {
+        online,
+        hasCoordinates: Boolean(coordinates ?? helperLocationRef.current),
+      });
+      return false;
+    }
+
+    const nextCoordinates = coordinates ?? helperLocationRef.current;
+    if (nextCoordinates) {
+      helperLog("emit mechanic:location", nextCoordinates);
+      socket.emit("mechanic:location", nextCoordinates);
+    }
+
+    helperLog("emit mechanic:online", {
+      userId: user?.id,
+      socketId: socket.id,
+    });
+    socket.emit("mechanic:online");
+
+    return true;
+  };
 
   const ensureHelperLocation = async () => {
     const currentPermission = await Location.getForegroundPermissionsAsync();
@@ -147,14 +181,48 @@ export const useHelperJob = () => {
     let isMounted = true;
 
     const init = async () => {
+      setIsBootstrapping(true);
+      if (!isAuthenticated || user?.role !== "helper") {
+        socketRef.current?.disconnect();
+        socketRef.current = null;
+        setSocketConnected(false);
+        setIsBootstrapping(false);
+        return;
+      }
+
       const token = await getStoredToken();
-      if (!token || !isMounted) return;
+      if (!token || !isMounted) {
+        setIsBootstrapping(false);
+        return;
+      }
 
       await ensureHelperLocation();
 
+      socketRef.current?.disconnect();
+      setSocketConnected(false);
       socketRef.current = io(BASE_URL, {
         ...SOCKET_OPTIONS,
         auth: { token },
+      });
+      helperLog("socket created", { userId: user?.id });
+
+      socketRef.current.on("connect", () => {
+        setSocketConnected(true);
+        setIsBootstrapping(false);
+        helperLog("socket connected", {
+          userId: user?.id,
+          socketId: socketRef.current?.id,
+          online,
+        });
+        if (!isMounted) return;
+
+      });
+      socketRef.current.on("disconnect", (reason: string) => {
+        setSocketConnected(false);
+        helperLog("socket disconnected", {
+          userId: user?.id,
+          reason,
+        });
       });
 
       socketRef.current.on("wallet:low_balance", (data: any) => {
@@ -165,6 +233,12 @@ export const useHelperJob = () => {
       });
 
       socketRef.current.on("ride:sync", (data: any) => {
+        helperLog("ride:sync received", {
+          userId: user?.id,
+          requestId: data?.requestId ?? null,
+          status: data?.status ?? null,
+          isOnline: data?.isOnline ?? null,
+        });
         if (!isMounted) return;
         const inProgressStatuses = ["accepted", "arrived", "working"];
         if (data.requestId && inProgressStatuses.includes(data.status)) {
@@ -190,10 +264,23 @@ export const useHelperJob = () => {
       });
 
       socketRef.current.on("request:new", async (request: Request) => {
+        helperLog("request:new received", {
+          requestId: request.requestId,
+          userName: request.userName,
+          distance: request.distance,
+          distanceKm: request.distanceKm ?? null,
+          stage: stageRef.current,
+          activeRequestId: activeIdRef.current,
+        });
         const isBusy =
           activeIdRef.current !== null ||
           ["navigating", "arrived", "working"].includes(stageRef.current);
         if (isBusy) {
+          helperLog("request:new ignored because helper is busy", {
+            requestId: request.requestId,
+            stage: stageRef.current,
+            activeRequestId: activeIdRef.current,
+          });
           return;
         }
 
@@ -209,16 +296,29 @@ export const useHelperJob = () => {
         setIncomingRequests((prev) => {
           const exists = prev.some((item) => item.requestId === request.requestId);
           if (exists) {
+            helperLog("request:new already exists in list", {
+              requestId: request.requestId,
+              listSize: prev.length,
+            });
             return prev;
           }
 
-          return prioritizeRequests(
+          const next = prioritizeRequests(
             [...prev, enrichedRequest],
             helperLocationRef.current,
           );
+          helperLog("incomingRequests updated from request:new", {
+            requestId: request.requestId,
+            nextSize: next.length,
+            requestIds: next.map((item) => item.requestId),
+          });
+          return next;
         });
 
         setNearbyNotification(enrichedRequest);
+        helperLog("nearbyNotification updated", {
+          requestId: enrichedRequest.requestId,
+        });
         await Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success,
         );
@@ -227,6 +327,7 @@ export const useHelperJob = () => {
       socketRef.current.on(
         "request:unavailable",
         ({ requestId }: { requestId: number }) => {
+          helperLog("request:unavailable received", { requestId });
           setIncomingRequests((prev) =>
             prev.filter((request) => request.requestId !== requestId),
           );
@@ -277,10 +378,19 @@ export const useHelperJob = () => {
     init();
     return () => {
       isMounted = false;
+      setSocketConnected(false);
       socketRef.current?.disconnect();
       locationWatcherRef.current?.remove();
     };
-  }, []);
+  }, [isAuthenticated, user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!online || !socketConnected) {
+      return;
+    }
+
+    emitOnlinePresence();
+  }, [online, socketConnected]);
 
   const [agreedPrice, setAgreedPrice] = useState<number>(0);
 
@@ -305,8 +415,11 @@ export const useHelperJob = () => {
       }
 
       setOnline(true);
-      socketRef.current?.emit("mechanic:online");
-      socketRef.current?.emit("mechanic:location", coordinates);
+      helperLog("toggleOnline -> ON", {
+        userId: user?.id,
+        coordinates,
+      });
+      emitOnlinePresence(coordinates);
 
       locationWatcherRef.current = await Location.watchPositionAsync(
         {
@@ -329,6 +442,7 @@ export const useHelperJob = () => {
 
           if (shouldEmit) {
             lastLocationEmitRef.current = now;
+            helperLog("watchPosition emit mechanic:location", nextCoordinates);
             socketRef.current?.emit("mechanic:location", nextCoordinates);
           }
 
@@ -343,6 +457,7 @@ export const useHelperJob = () => {
       );
     } else {
       setOnline(false);
+      helperLog("toggleOnline -> OFF", { userId: user?.id });
       locationWatcherRef.current?.remove();
       socketRef.current?.emit("mechanic:offline");
       setJobStage("idle");
@@ -384,6 +499,25 @@ export const useHelperJob = () => {
     [incomingRequests, helperLocation],
   );
 
+  const helperStatusMessage = !isAuthenticated || user?.role !== "helper"
+    ? "Signing in helper workspace..."
+    : isBootstrapping
+    ? "Preparing helper workspace..."
+    : !locationReady
+    ? "Getting your location ready..."
+    : !socketConnected
+    ? "Connecting realtime requests..."
+    : online
+    ? "Visible to customers"
+    : "Tap to start receiving jobs";
+
+  const canToggleOnline =
+    isAuthenticated &&
+    user?.role === "helper" &&
+    locationReady &&
+    socketConnected &&
+    !isBootstrapping;
+
   return {
     online,
     helperLocation,
@@ -394,6 +528,10 @@ export const useHelperJob = () => {
     jobStage,
     stats,
     locationReady,
+    isBootstrapping,
+    socketConnected,
+    helperStatusMessage,
+    canToggleOnline,
     toggleOnline,
     modalConfig,
     setModalConfig,
@@ -429,7 +567,7 @@ export const useHelperJob = () => {
           socketRef.current?.emit("mechanic:online");
         }
       } catch (err) {
-        Alert.alert("Error", "Unable to cancel the ride right now.");
+        showModal("Unable to Cancel", "Unable to cancel the ride right now.", "error");
       }
     },
   };

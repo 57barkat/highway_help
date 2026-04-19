@@ -18,7 +18,7 @@ import AppShell from "@/components/navigation/AppShell";
 SplashScreenExpo.preventAutoHideAsync().catch(() => {});
 
 const RootLayoutContent = () => {
-  const { isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -52,7 +52,7 @@ const RootLayoutContent = () => {
       </View>
     );
 
-  return (
+  const stack = (
     <>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
@@ -60,6 +60,8 @@ const RootLayoutContent = () => {
       </Stack>
     </>
   );
+
+  return isAuthenticated ? <AppShell>{stack}</AppShell> : stack;
 };
 
 const RootLayout = () => {
@@ -68,9 +70,7 @@ const RootLayout = () => {
       <AuthProvider>
         <ThemeProvider>
           <HelperProvider>
-            <AppShell>
-              <RootLayoutContent />
-            </AppShell>
+            <RootLayoutContent />
           </HelperProvider>
         </ThemeProvider>
       </AuthProvider>

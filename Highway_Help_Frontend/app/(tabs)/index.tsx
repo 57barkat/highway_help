@@ -1,30 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { View, ActivityIndicator } from "react-native";
 import HelperScreen from "../screens/HelperScreen";
 import UserScreen from "../screens/UserScreen";
-import { getStoredUser } from "@/lib/auth-storage";
-
-interface StoredUser {
-  id: number;
-  role: "user" | "helper";
-}
+import { Redirect } from "expo-router";
+import { useAuth } from "@/context/auth";
 
 export default function HomeScreen() {
-  const [role, setRole] = useState<"user" | "helper" | null>(null);
+  const { isAuthenticated, isLoading, user } = useAuth();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const raw = await getStoredUser();
-      if (!raw) return;
-
-      const user: StoredUser = JSON.parse(raw);
-      setRole(user.role);
-    };
-
-    loadUser();
-  }, []);
-
-  if (!role) {
+  if (isLoading) {
     return (
       <View
         style={{
@@ -38,5 +22,9 @@ export default function HomeScreen() {
     );
   }
 
-  return role === "helper" ? <HelperScreen /> : <UserScreen />;
+  if (!isAuthenticated || !user) {
+    return <Redirect href="/SignInScreen" />;
+  }
+
+  return user.role === "helper" ? <HelperScreen /> : <UserScreen />;
 }

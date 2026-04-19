@@ -34,6 +34,10 @@ interface HelperContextType {
     count: number;
     availableBalance: number;
   };
+  isBootstrapping: boolean;
+  socketConnected: boolean;
+  helperStatusMessage: string;
+  canToggleOnline: boolean;
   toggleOnline: () => Promise<void>;
   locationReady: boolean;
   sendOffer: (requestId: number, price: number) => Promise<boolean>;

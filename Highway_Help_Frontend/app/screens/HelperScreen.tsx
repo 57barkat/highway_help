@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import {
   View,
   StatusBar,
@@ -33,12 +33,18 @@ export default function HelperScreen() {
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [finalAmount, setFinalAmount] = useState("");
   const [cooldowns, setCooldowns] = useState<Record<number, number>>({});
+  const [availabilityCollapsed, setAvailabilityCollapsed] = useState(false);
+  const screenLog = (label: string, payload?: Record<string, unknown>) => {
+    console.log(
+      `[helper-screen] ${new Date().toISOString()} ${label}`,
+      payload ?? {},
+    );
+  };
 
   const {
     online,
     incomingRequests,
     nearbyNotification,
-    clearNearbyNotification,
     jobStage,
     toggleOnline,
     sendOffer,
@@ -52,7 +58,45 @@ export default function HelperScreen() {
     modalConfig,
     setModalConfig,
     locationReady,
+    isBootstrapping,
+    socketConnected,
+    helperStatusMessage,
+    canToggleOnline,
   } = useHelper();
+
+  const visibleRequests = useMemo(() => {
+    if (!nearbyNotification) {
+      return incomingRequests;
+    }
+
+    const existsInList = incomingRequests.some(
+      (request) => request.requestId === nearbyNotification.requestId,
+    );
+
+    return existsInList
+      ? incomingRequests
+      : [nearbyNotification, ...incomingRequests];
+  }, [incomingRequests, nearbyNotification]);
+
+  useEffect(() => {
+    screenLog("render state", {
+      online,
+      jobStage,
+      incomingCount: incomingRequests.length,
+      visibleCount: visibleRequests.length,
+      incomingIds: incomingRequests.map((request) => request.requestId),
+      visibleIds: visibleRequests.map((request) => request.requestId),
+      nearbyNotificationId: nearbyNotification?.requestId ?? null,
+      selectedRequestId: selectedRequest?.requestId ?? null,
+    });
+  }, [
+    online,
+    jobStage,
+    incomingRequests,
+    visibleRequests,
+    nearbyNotification,
+    selectedRequest,
+  ]);
 
   useEffect(() => {
     if (
@@ -90,7 +134,15 @@ export default function HelperScreen() {
     return () => clearInterval(interval);
   }, [cooldowns]);
 
+  useEffect(() => {
+    setAvailabilityCollapsed(online);
+  }, [online]);
+
   const handleOpenRequest = (item: any) => {
+    screenLog("handleOpenRequest", {
+      requestId: item?.requestId,
+      visibleIds: visibleRequests.map((request) => request.requestId),
+    });
     setSelectedRequest(item);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setTimeout(() => bottomSheetRef.current?.snapToIndex(0), 100);
@@ -305,7 +357,17 @@ export default function HelperScreen() {
       <View style={{ flex: 1, paddingTop: insets.top }}>
         {jobStage === "idle" ? (
           <>
-            <HelperHeaderSection online={online} toggleOnline={toggleOnline} />
+            <HelperHeaderSection
+              online={online}
+              toggleOnline={toggleOnline}
+              disabled={!canToggleOnline && !online}
+              loading={isBootstrapping || !socketConnected}
+              statusText={helperStatusMessage}
+              collapsed={availabilityCollapsed}
+              onToggleCollapsed={() =>
+                setAvailabilityCollapsed((current) => !current)
+              }
+            />
             {nearbyNotification ? (
               <TouchableOpacity
                 style={[
@@ -313,7 +375,6 @@ export default function HelperScreen() {
                   { backgroundColor: theme.colors.primary },
                 ]}
                 onPress={() => {
-                  clearNearbyNotification();
                   handleOpenRequest(nearbyNotification);
                 }}
               >
@@ -326,6 +387,12 @@ export default function HelperScreen() {
                   <Text style={styles.notificationMeta}>
                     {nearbyNotification.distanceKm?.toFixed(1) ?? "0"} km away
                   </Text>
+                  {(cooldowns[nearbyNotification.requestId] || 0) > 0 ? (
+                    <Text style={styles.notificationMeta}>
+                      Offer sent. Resend available in{" "}
+                      {cooldowns[nearbyNotification.requestId]}s
+                    </Text>
+                  ) : null}
                 </View>
                 <Ionicons
                   name="arrow-forward-circle"
@@ -335,7 +402,7 @@ export default function HelperScreen() {
               </TouchableOpacity>
             ) : null}
             <FlatList
-              data={incomingRequests}
+              data={visibleRequests}
               keyExtractor={(item) => item.requestId.toString()}
               contentContainerStyle={[
                 styles.listContainer,

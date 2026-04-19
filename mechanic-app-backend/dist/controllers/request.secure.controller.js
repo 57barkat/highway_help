@@ -24,6 +24,9 @@ const PROBLEM_RATES = {
     "Locked Out": { base: 120, perKm: 40 },
     "General Help": { base: 100, perKm: 25 },
 };
+const requestLog = (label, payload) => {
+    console.log(`[request-flow] ${new Date().toISOString()} ${label}`, payload ? JSON.stringify(payload) : "");
+};
 const getVisibleMechanics = () => Array.from(index_1.onlineMechanics.values()).filter((mechanic) => mechanic.lat !== null &&
     mechanic.lng !== null &&
     !mechanic.isBusy &&
@@ -175,6 +178,12 @@ const createRequest = async (req, res) => {
                 continue;
             }
             foundNearby = true;
+            requestLog("request:new emit", {
+                requestId: request.id,
+                helperUserId: mechanic.userId,
+                distanceKm: Number(distanceKm.toFixed(2)),
+                radiusKm: searchRadius,
+            });
             index_1.io.to(mechanic.socketId).emit("request:new", {
                 requestId: request.id,
                 userId: user.id,

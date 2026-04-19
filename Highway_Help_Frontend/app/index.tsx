@@ -1,32 +1,18 @@
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
-import { getStoredUser } from "@/lib/auth-storage";
-import { getValidAccessToken } from "@/lib/auth-client";
+import { useAuth } from "@/context/auth";
 
 export default function Index() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = await getValidAccessToken();
-        const user = await getStoredUser();
+    if (isLoading) {
+      return;
+    }
 
-        if (token && user) {
-          // Navigate to tabs root (remove parentheses)
-          router.replace("/(tabs)");
-        } else {
-          // Navigate to login/phone auth
-          router.replace("/SignInScreen");
-        }
-      } catch (err) {
-        console.log("Error checking auth:", err);
-        router.replace("/SignInScreen");
-      }
-    };
+    router.replace(isAuthenticated ? "/(tabs)" : "/SignInScreen");
+  }, [isAuthenticated, isLoading, router]);
 
-    checkAuth();
-  }, []);
-
-  return null; // no UI needed, just redirect
+  return null;
 }

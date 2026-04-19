@@ -10,11 +10,10 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import api from "../api/api";
 import { router } from "expo-router";
 import { StatusModal } from "@/models/StatusModal";
 import { normalizePkPhoneNumber } from "@/lib/utils";
-import { persistSession } from "@/lib/auth-storage";
+import { useAuth } from "@/context/auth";
 import { useTheme } from "@/context/theme";
 import { uiRadii, uiShadows, uiSpacing } from "@/lib/ui/system";
 
@@ -27,6 +26,7 @@ const CATEGORIES = [
 
 export default function SignUp() {
   const { theme } = useTheme();
+  const { signup } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -73,28 +73,18 @@ export default function SignUp() {
 
     setLoading(true);
     try {
-      const payload: {
-        name: string;
-        email: string;
-        phoneNumber: string;
-        password: string;
-        role: "user" | "helper";
-        categories?: string[];
-      } = {
+      const ok = await signup(
         name,
         email,
-        phoneNumber: normalizedPhoneNumber,
+        normalizedPhoneNumber,
         password,
         role,
-      };
+        categories,
+      );
 
-      if (role === "helper") {
-        payload.categories = categories;
+      if (!ok) {
+        throw new Error("signup failed");
       }
-
-      const response = await api.post("/auth/register", payload);
-      const { accessToken, refreshToken, user } = response.data;
-      await persistSession(accessToken, user, refreshToken);
 
       showModal("Welcome aboard", "Your account is ready to go.", "success");
 

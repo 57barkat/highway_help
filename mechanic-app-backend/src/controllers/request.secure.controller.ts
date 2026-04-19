@@ -36,6 +36,12 @@ const PROBLEM_RATES: Record<string, { base: number; perKm: number }> = {
   "Locked Out": { base: 120, perKm: 40 },
   "General Help": { base: 100, perKm: 25 },
 };
+const requestLog = (label: string, payload?: Record<string, unknown>) => {
+  console.log(
+    `[request-flow] ${new Date().toISOString()} ${label}`,
+    payload ? JSON.stringify(payload) : "",
+  );
+};
 
 const getVisibleMechanics = () =>
   Array.from(onlineMechanics.values()).filter(
@@ -249,6 +255,12 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
       }
 
       foundNearby = true;
+      requestLog("request:new emit", {
+        requestId: request.id,
+        helperUserId: mechanic.userId,
+        distanceKm: Number(distanceKm.toFixed(2)),
+        radiusKm: searchRadius,
+      });
       io.to(mechanic.socketId).emit("request:new", {
         requestId: request.id,
         userId: user.id,

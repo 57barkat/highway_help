@@ -5,17 +5,29 @@ import {
   Animated,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/app/constants/Colors";
+import { useTheme } from "@/context/theme";
 
 interface OnlineSliderProps {
   online: boolean;
   onToggle: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  statusText?: string;
 }
 
-export const OnlineSlider = ({ online, onToggle }: OnlineSliderProps) => {
+export const OnlineSlider = ({
+  online,
+  onToggle,
+  disabled = false,
+  loading = false,
+  statusText,
+}: OnlineSliderProps) => {
+  const { theme } = useTheme();
   const animatedValue = useRef(new Animated.Value(online ? 1 : 0)).current;
 
   useEffect(() => {
@@ -28,6 +40,9 @@ export const OnlineSlider = ({ online, onToggle }: OnlineSliderProps) => {
   }, [online]);
 
   const handlePress = () => {
+    if (disabled) {
+      return;
+    }
     // Light impact feels more premium for a toggle than "Heavy"
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggle();
@@ -60,6 +75,7 @@ export const OnlineSlider = ({ online, onToggle }: OnlineSliderProps) => {
         activeOpacity={1}
         onPress={handlePress}
         style={styles.touchArea}
+        disabled={disabled}
       >
         <Animated.View style={[styles.container, { backgroundColor }]}>
           <View style={styles.textTrack}>
@@ -84,17 +100,21 @@ export const OnlineSlider = ({ online, onToggle }: OnlineSliderProps) => {
           <Animated.View
             style={[styles.thumb, { transform: [{ translateX }] }]}
           >
-            <Ionicons
-              name={online ? "flashlight" : "moon"}
-              size={20}
-              color={online ? "#10B981" : "#64748B"}
-            />
+            {loading ? (
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            ) : (
+              <Ionicons
+                name={online ? "flashlight" : "moon"}
+                size={20}
+                color={online ? "#10B981" : "#64748B"}
+              />
+            )}
           </Animated.View>
         </Animated.View>
       </TouchableOpacity>
 
       <Text style={styles.subHint}>
-        {online ? "Visible to customers" : "Tap to start receiving jobs"}
+        {statusText || (online ? "Visible to customers" : "Tap to start receiving jobs")}
       </Text>
     </View>
   );

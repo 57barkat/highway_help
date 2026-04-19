@@ -24,6 +24,7 @@ interface AuthContextType {
     phoneNumber: string,
     password: string,
     role: Role,
+    categories?: string[],
   ) => Promise<boolean>;
   logout: () => Promise<void>;
   setAuthenticated: (authenticated: boolean) => void;
@@ -105,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     phoneNumber: string,
     password: string,
     role: Role,
+    categories: string[] = [],
   ): Promise<boolean> => {
     try {
       const response = await api.post("/auth/register", {
@@ -113,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         phoneNumber,
         password,
         role,
+        ...(role === "helper" ? { categories } : {}),
       });
 
       if (response.data?.accessToken && response.data?.user) {
